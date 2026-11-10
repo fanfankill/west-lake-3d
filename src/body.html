@@ -1,0 +1,52 @@
+<canvas id="gl" tabindex="0" aria-label="西湖湖畔三维场景，可拖动旋转、滚轮缩放"></canvas>
+<div id="labels"></div>
+<div id="poem"></div>
+<header id="brand"><h1>西湖</h1><div><span class="seal">湖畔</span><p>四时空镜</p></div></header>
+
+<aside id="explore" class="panel" aria-label="探索">
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="views">景观</button>
+    <button role="tab" aria-selected="false" data-tab="parts">构件</button>
+    <button role="tab" aria-selected="false" data-tab="crafts">材质工艺</button>
+  </div>
+  <div class="list on" id="l-views"></div>
+  <div class="list" id="l-parts"></div>
+  <div class="list" id="l-crafts"></div>
+</aside>
+
+<aside id="dock" class="panel" aria-label="时令与显示">
+  <div class="row"><div class="lab">时节<b id="s-now"></b></div>
+    <div class="seg seasons" id="seasons"><button data-s="0" aria-pressed="true">春</button><button data-s="1" aria-pressed="false">夏</button><button data-s="2" aria-pressed="false">秋</button><button data-s="3" aria-pressed="false">冬</button></div>
+  </div>
+  <div class="row"><div class="lab">天光<b>入夜自动亮灯</b></div>
+    <div class="seg" id="tods"><button data-t="0" aria-pressed="true">白昼</button><button data-t="0.5" aria-pressed="false">夕照</button><button data-t="1" aria-pressed="false">入夜</button></div>
+  </div>
+  <div class="row"><div class="lab">天气</div>
+    <div class="seg" id="wx"><button data-r="0" aria-pressed="true">晴</button><button data-r="1" aria-pressed="false" id="wx-rain">烟雨</button></div>
+  </div>
+  <div class="row"><div class="lab">体验</div>
+    <div class="acts">
+      <button class="act" id="a-walk" aria-pressed="false">湖畔漫步</button>
+      <button class="act" id="a-cycle" aria-pressed="false">四季流转</button>
+      <button class="act" id="a-bell">听南屏晚钟</button>
+      <button class="act" id="a-reset">回到全景</button>
+    </div>
+    <p class="tip">点一下湖面，涟漪荡开，桥边的锦鲤会循着游来；入夜后再点，可放一盏荷灯。</p>
+  </div>
+  <div class="row"><label for="op">整体透明度<b id="op-v" style="letter-spacing:.05em;font-variant-numeric:tabular-nums">100%</b></label>
+    <input type="range" id="op" min="8" max="100" value="100">
+  </div>
+  <div class="row"><div class="acts">
+    <button class="act" id="a-labels" aria-pressed="true">景名题签</button>
+    <button class="act" id="a-showall">全部显示</button>
+  </div></div>
+</aside>
+
+<section id="card" class="panel" hidden aria-live="polite">
+  <h2 id="c-title"></h2>
+  <div class="body"><div class="tag" id="c-tag"></div><p id="c-text"></p><div class="btns" id="c-btns"></div></div>
+</section>
+
+<nav id="mbar" class="panel"><button data-sheet="explore" aria-pressed="false">探索</button><button data-sheet="dock" aria-pressed="false">时令</button></nav>
+<div id="film"><div class="t1"></div><div class="t2"></div><div class="s1"></div><div class="sn"></div><div class="sd"></div><div class="e1"></div><div class="e2"></div><div class="fade"></div></div>
+<div id="veil">研墨铺纸…</div>
