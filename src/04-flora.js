@@ -283,13 +283,13 @@ function buildFar() {
     const KIND = ['camphor', 'plane', 'camphor', 'ginkgo', 'camphor', 'maple', 'camphor', 'plane', 'peach'], fInv = r => Math.pow(clamp(r, 0, 1), 1 / 1.25);
     if (shoreTrees && o.near) { // 近山：水边一排、山脚成片，都是带叶面的树
       for (let i = 0, c = 0; i < n; i += 1.9 / (step * 6) / shoreTrees, c++) { const p = at(i + rr(-.3, .3), fInv(rr(.085, .2))); treeFar('far-hill', KIND[c % 9], p[0], p[1], p[2], rr(.8, 1.15)); }
-      for (let c = 0; c < (o.slope || 0); c++) { const p = at(rr(n * .03, n * .97), fInv(.235 + .34 * Math.pow(rnd(), 1.6))); treeFar('far-hill', KIND[c % 8], p[0], p[1] - 1.2, p[2], rr(1.1, 1.7), 1); } }
+      const SK = ['camphor', 'camphor', 'camphor', 'plane', 'camphor', 'camphor', 'maple', 'camphor', 'camphor', 'ginkgo']; for (let c = 0; c < (o.slope || 0); c++) { const p = at(rr(n * .02, n * .98), fInv(.235 + .57 * Math.pow(rnd(), 1.35))); treeFar('far-hill', SK[c % 10], p[0], p[1] - 1.2, p[2], rr(1.15, 1.8), 1); } }
     else if (shoreTrees) for (let i = 0; i < n; i += .3 / shoreTrees / (step / 1.1)) { const hr = HR(i), rs = hr[2] - D - A * rr(.2, .85), sz = rr(7, 10); blob('far-hill', i % 9 < 1 ? 'farPeach' : 'farTree', Math.cos(hr[0]) * rs, 1.2 + sz * .6, Math.sin(hr[0]) * rs, sz, sz * rr(.8, 1.1), sz, rr(.78, 1.05), 0, 0); }
     return deg => HR((deg - a0) / (a1 - a0) * n);
   };
   // 南山在苏堤以西向外退开，让出西里湖
-  FARPOS.southH = ridge('hill1', 780, 96, 172, 95, 150, 3, [], 1, { step: .4, near: 1, slope: 540, Rf: ad => sstep(108, 138, ad) * 240 });
-  const northH = FARPOS.northH = ridge('hill1', 1080, 236, 300, 105, 190, 11, [[262, 55, 5]], 1, { step: .35, near: 1, slope: 500 });
+  FARPOS.southH = ridge('hill1', 780, 96, 172, 95, 150, 3, [], 1, { step: .4, near: 1, slope: 1150, Rf: ad => sstep(108, 138, ad) * 240 });
+  const northH = FARPOS.northH = ridge('hill1', 1080, 236, 300, 105, 190, 11, [[262, 55, 5]], 1, { step: .35, near: 1, slope: 1050 });
   ridge('hill2', 1650, 88, 270, 210, 330, 21, [[168, 60, 9], [206, 90, 8]], 1.6, { step: .55, bump: 9, rows: 26 }); ridge('hill3', 2700, 70, 292, 300, 480, 33, [[160, 120, 7], [200, 170, 7]], 0, { step: .8, bump: 12, rows: 18 });
   ridge('hill3', 2500, -70, 75, 70, 300, 47, [], 0, { step: .9, bump: 8, rows: 16 });
   // 苏堤：长堤卧波，六桥（自北而南：跨虹、东浦、压堤、望山、锁澜、映波），桃柳相间
@@ -305,16 +305,62 @@ function buildFar() {
   const lx = -330, lz = 560, lh = 46;
   const lf = hillField('far-hill', 'hill1', lx, lz + 20, 150, 130, lh + 2, 5, 80, 70, .4);
   for (let i = 0; i < 300; i++) { const a = rnd() * TAU, r = Math.sqrt(rnd()) * .96, x = lx + Math.cos(a) * r * 150, z = lz + 20 + Math.sin(a) * r * 130; if (Math.hypot(x - lx, z - lz) < 24) continue; treeFar('far-hill', ['camphor', 'plane', 'camphor', 'maple', 'ginkgo', 'camphor'][i % 6], x, lf(x, z) - .8, z, rr(.85, 1.3)); }
-  let y = lf(lx, lz) - 6; B.add('far-leifeng', 'stone', new THREE.CylinderGeometry(19, 21, 9, 8), TM(lx, y + 4.5, lz), .9); y += 9;
-  for (let i = 0; i < 5; i++) { const rb = 9.6 - i * .95, hb = 9.2 - i * .5; B.add('far-leifeng', 'pagoda', new THREE.CylinderGeometry(rb * .96, rb, hb, 8), TM(lx, y + hb / 2, lz, PI / 8), 1.15);
-    B.add('far-leifeng', 'pagoda', new THREE.CylinderGeometry(rb + 2.4, rb + 2.4, .5, 8), TM(lx, y + .3, lz, PI / 8), .8);
-    farRoof(lx, y + hb - 1.2, lz, rb * .9, rb + 4.6, 2.6, .55); y += hb; }
-  farRoof(lx, y - .4, lz, .3, 6.6, 7, .55); B.add('far-leifeng', 'gold', new THREE.CylinderGeometry(.25, .7, 9, 8), TM(lx, y + 10.5, lz)); B.add('far-leifeng', 'gold', new THREE.SphereGeometry(1.3, 10, 8), TM(lx, y + 7.2, lz));
-  addGlow(lx, lh + 34, lz, 0xffb24a, 150); addGlow(lx, lh + 62, lz, 0xffd27a, 60);
-  // 保俶塔（宝石山上，六面七层实心砖塔）
-  const bh = northH(262), ba = bh[0], bx = Math.cos(ba) * (bh[2] - 3), bz = Math.sin(ba) * (bh[2] - 3), by = bh[1] - 2.5; let yy = by;
-  for (let i = 0; i < 7; i++) { const r0 = 5.2 - i * .55, hh = 5.6 - i * .25; B.add('far-baochu', 'brick', new THREE.CylinderGeometry(r0 - .5, r0, hh, 6), TM(bx, yy + hh / 2, bz)); B.add('far-baochu', 'brick', new THREE.CylinderGeometry(r0 + .5, r0 + .1, .5, 6), TM(bx, yy + hh, bz), .8); yy += hh; }
-  B.add('far-baochu', 'metal', new THREE.CylinderGeometry(.12, .8, 10, 6), TM(bx, yy + 5, bz)); FARPOS.baochu = [bx, by, bz]; addGlow(bx, by + 22, bz, 0xffe2b0, 70);
+  // 八面五层楼阁式塔：两层石台基带栏杆踏步；每层有平座回廊与栏杆、内外两圈朱柱、额枋斗栱、槅扇门与槛窗；铜瓦翘角；金色塔刹
+  { const PT = 'far-leifeng', T8 = Math.tan(PI / 8), C8 = Math.cos(PI / 8), yb = lf(lx, lz) - 6;
+    const FP = (k, ap, u, y, out = 0) => { const a = k * PI / 4, nx = Math.sin(a), nz = Math.cos(a); return [lx + nx * (ap + out) + nz * u, y, lz + nz * (ap + out) - nx * u]; };
+    const fb = (k, mat, ap, u, y, out, su, sy, sn, tint) => { const p = FP(k, ap, u, y, out); B.box(PT, mat, p[0], p[1], p[2], su, sy, sn, k * PI / 4, tint); };
+    const oct = (mat, ap0, ap1, y0, h, tint) => B.add(PT, mat, new THREE.CylinderGeometry(ap1 / C8, ap0 / C8, h, 8), TM(lx, y0 + h / 2, lz, PI / 8), tint);
+    const ringLine = ap => { const o = []; for (let k = 0; k <= 8; k++) { const p = FP(k % 8, ap, -ap * T8, 0); o.push([p[0], p[2]]); } return o; };
+    // 台基两层
+    oct('stone', 25, 24, yb - 3, 6.2, .86); oct('slab', 23.6, 23.6, yb + 3.2, .08, 1.06); stoneRail(PT, ringLine(23.3), () => yb + 3.22, 2.9);
+    oct('stone', 17.2, 16.6, yb + 3.2, 3.6, .93); oct('slab', 16.2, 16.2, yb + 6.8, .08, 1.08); stoneRail(PT, ringLine(15.9), () => yb + 6.82, 2.7);
+    [0, 4].forEach(k => { for (let i = 0; i < 9; i++) fb(k, 'stone', 16.6, 0, yb + 6.6 - i * .4, .3 + i * .42, 5.2, .4, .5, .97 - i * .01); for (let i = 0; i < 12; i++) fb(k, 'stone', 24.2, 0, yb + 3.0 - i * .42, .3 + i * .45, 7, .42, .55, .95 - i * .01); });
+    let y0 = yb + 6.86;
+    for (let i = 0; i < 5; i++) { const ap = 8.6 - i * .9, H = 7.6 - i * .4, hw = ap * T8, apo = ap + 2.5, yt = y0 + H;
+      if (i) { oct('woodDk', apo - 1.5, apo + .25, y0 - .95, .7, .9); oct('wood', apo + .3, apo + .3, y0 - .25, .28, .82);                                // 平座：斗栱托着的回廊
+        for (let k = 0; k < 8; k++) { const hwo = (apo + .1) * T8; for (let j = -2; j <= 2; j++) fb(k, 'wood', apo + .1, j * hwo / 2.5, y0 + .55, 0, .14, 1.1, .14, .9);
+          [.35, .75, 1.08].forEach((yy, q) => fb(k, q === 2 ? 'woodDk' : 'wood', apo + .1, 0, y0 + yy, 0, hwo * 2, q === 2 ? .12 : .08, q === 2 ? .16 : .07, .9)); } }
+      oct('pagodaW', ap, ap, y0, H, 1); oct('stone', ap + .12, ap + .12, y0, .5, .92); oct('woodDk', ap + .16, ap + .16, yt - 1.25, .75, .95); oct('wood', ap + .1, ap + .1, yt - 1.6, .32, .85);
+      for (let k = 0; k < 8; k++) { const hwo = apo * T8;
+        [[ap + .05, hw, .34, yt - .5], [apo, hwo, .27, yt - 1.5]].forEach(c => { const p = FP(k, c[0], c[1], 0); B.add(PT, 'wood', new THREE.CylinderGeometry(c[2] * .92, c[2], c[3] - y0, 10), TM(p[0], (y0 + c[3]) / 2, p[2])); B.add(PT, 'stone', new THREE.CylinderGeometry(c[2] * 1.5, c[2] * 1.7, .3, 10), TM(p[0], y0 + .15, p[2])); });
+        fb(k, 'woodDk', apo, 0, yt - 1.35, 0, hwo * 2, .42, .3, .95); fb(k, 'wood', apo, 0, yt - 1.78, 0, hwo * 2, .26, .2, .85);                                        // 檐柱间的额枋
+        for (let j = -2; j <= 2; j++) { const u = j * hwo / 2.6; fb(k, 'woodDk', apo, u, yt - .95, .25, .34, .3, .9, .92); fb(k, 'wood', apo, u, yt - .68, .62, .62, .2, .26, .85); fb(k, 'woodDk', ap, u * hw / hwo, yt - .7, 1.2, .26, .22, 2.2, .9); }   // 斗栱与挑檐枋
+        const dw = Math.min(2.5, hw * 1.05), dh = H * .52, door = k % 2 === 0;
+        if (door) { fb(k, 'woodDk', ap, 0, y0 + .5 + dh / 2, .05, dw + .3, dh + .3, .12, .9); fb(k, 'lampGl', ap, 0, y0 + .5 + dh * .62, .13, dw - .1, dh * .7, .04, 1); fb(k, 'wood', ap, 0, y0 + .5 + dh * .14, .13, dw - .1, dh * .26, .05, .9);
+          for (let q = 1; q < 4; q++) fb(k, 'woodDk', ap, -dw / 2 + q * dw / 4, y0 + .5 + dh / 2, .17, q === 2 ? .1 : .05, dh, .05); for (let q = 1; q < 6; q++) fb(k, 'woodDk', ap, 0, y0 + .5 + dh * (.28 + q * .12), .17, dw - .1, .045, .04);
+          fb(k, 'plaque', ap, 0, y0 + .5 + dh + .75, .1, dw * .7, .7, .1, 1); fb(k, 'gold', ap, 0, y0 + .5 + dh + .75, .16, dw * .5, .3, .02, 1); }
+        else { const ww = Math.min(2.2, hw * .95), wh = H * .3, wy = y0 + H * .46; fb(k, 'woodDk', ap, 0, wy, .05, ww + .26, wh + .26, .12, .9); fb(k, 'lampGl', ap, 0, wy, .13, ww, wh, .04, 1);
+          for (let q = 1; q < 6; q++) fb(k, 'woodDk', ap, -ww / 2 + q * ww / 6, wy, .17, .045, wh, .04); for (let q = 1; q < 4; q++) fb(k, 'woodDk', ap, 0, wy - wh / 2 + q * wh / 4, .17, ww, .045, .04); fb(k, 'stone', ap, 0, wy - wh / 2 - .28, .12, ww + .5, .16, .3, .95); }
+      }
+      const top = i === 4;
+      buildRoof(PT, PT, { sides: 8, rTop: top ? .6 : ap - .5, rEave: ap + 5.0, h: top ? 7.2 : 2.5, sag: top ? .3 : .2, lift: top ? 1.7 : 1.5, flare: .55, cx: lx, cy: yt - .35, cz: lz, rot: 0 }, { sp: .78, nu: 8, nt: top ? 8 : 5, tile: 'copper', ridge: 'copper', sc: 2.3 });
+      for (let k = 0; k < 8; k++) { const p = FP(k, ap + 5.0, (ap + 5.0) * T8, 0); addGlow(p[0] * .985 + lx * .015, yt + .6, p[2] * .985 + lz * .015, 0xffc070, 2.2); }       // 檐角灯
+      y0 = yt + (top ? 6.75 : 2.05);
+    }
+    // 塔刹：覆钵、七重相轮、宝盖、宝珠
+    const sp = [[0, 0], [1.9, 0], [2.05, .35], [1.7, 1.1], [.9, 1.6], [.34, 1.8]]; let sy = 1.9;
+    for (let j = 0; j < 7; j++) { const r = 1.5 - j * .12; sp.push([.3, sy], [r, sy + .14], [r, sy + .36], [.3, sy + .5]); sy += .74; }
+    sp.push([.26, sy], [1.15, sy + .1], [1.2, sy + .3], [.3, sy + .5], [.2, sy + .9], [.62, sy + 1.25], [.7, sy + 1.6], [.45, sy + 2.05], [.12, sy + 2.3], [.06, sy + 3.5], [0, sy + 3.6]);
+    B.add(PT, 'gold', lathe(sp, 20), TM(lx, y0 - .2, lz), 1.1);
+    addGlow(lx, yb + 22, lz, 0xffb24a, 150); addGlow(lx, yb + 46, lz, 0xffd27a, 70); FARPOS.leifeng = [lx, yb, lz, y0 + sy + 3.4]; }
+  // 保俶塔（宝石山上）：六面七层实心砖塔，瘦削挺拔。石台、须弥座、每层叠涩出檐、六面券龛、转角倚柱，铁刹带七重相轮
+  { const PT = 'far-baochu', bh = northH(262), ba = bh[0], bx = Math.cos(ba) * (bh[2] - 3), bz = Math.sin(ba) * (bh[2] - 3), by = bh[1] - 1.5, C6 = Math.cos(PI / 6);
+    const hex = (mat, r0, r1, y, h, tint) => B.add(PT, mat, new THREE.CylinderGeometry(r1, r0, h, 6), TM(bx, y + h / 2, bz), tint);
+    const fb = (k, mat, r, u, y, out, su, sy, sn, tint) => { const a = (k + .5) * PI / 3, nx = Math.sin(a), nz = Math.cos(a), ap = r * C6 + out; B.box(PT, mat, bx + nx * ap + nz * u, y, bz + nz * ap - nx * u, su, sy, sn, a, tint); };
+    hex('rock', 9, 7.2, by - 9, 9.2, .9); hex('stone', 7, 6.8, by, 1.2, .9); hex('slab', 6.5, 6.5, by + 1.2, .08, 1.05);
+    { const ln = []; for (let k = 0; k <= 6; k++) { const a = k * PI / 3; ln.push([bx + Math.sin(a) * 6.2, bz + Math.cos(a) * 6.2]); } stoneRail(PT, ln, () => by + 1.24, 2.1); }
+    let yy = by + 1.28; [[4.9, 4.9, .5, .9], [4.5, 4.3, .35, 1], [4.1, 4.1, .9, .92], [4.4, 4.6, .3, 1], [4.7, 4.7, .25, .95]].forEach(q => { hex('stone', q[0], q[1], yy, q[2], q[3]); yy += q[2]; });   // 须弥座
+    for (let i = 0; i < 7; i++) { const r0 = 3.7 - i * .36, r1 = r0 - .2, hh = 5.4 - i * .3, fw = r0 * .5;
+      hex('brick', r0, r1, yy, hh, 1); hex('brick', r0 + .12, r0 + .1, yy, .35, .86);
+      for (let k = 0; k < 6; k++) { const a = k * PI / 3; B.add(PT, 'brick', new THREE.CylinderGeometry(.2, .22, hh, 6), TM(bx + Math.sin(a) * (r0 - .12), yy + hh / 2, bz + Math.cos(a) * (r0 - .12)), .88);        // 转角倚柱
+        const nh = hh * .46, ny = yy + hh * .42; fb(k, 'brick', r0 - .1, 0, ny, .02, fw + .3, nh + .3, .16, .84); fb(k, 'plaque', r0 - .1, 0, ny - .04, .08, fw, nh - .08, .08, 1.6);                                         // 券龛
+        fb(k, 'brick', r0 - .1, 0, ny + nh / 2 + .22, .06, fw + .5, .14, .2, .8); fb(k, 'brick', r0 - .1, 0, yy + hh - .5, .0, r0 * .9, .16, .14, .82); }
+      yy += hh; [[.18, .86], [.42, .94], [.7, .86], [1.0, .97], [.62, .8], [.3, .9]].forEach((q, j) => { hex(j === 3 ? 'stone' : 'brick', r1 + q[0] - (j < 4 ? .12 : 0), r1 + q[0], yy, .17, q[1]); yy += .17; });               // 叠涩出檐
+    }
+    hex('brick', 1.5, .5, yy, 1.3, .9); yy += 1.3;
+    const sp = [[0, 0], [.75, 0], [.8, .2], [.5, .7], [.16, .9]]; let sy = 1.0; for (let j = 0; j < 7; j++) { const r = .62 - j * .055; sp.push([.13, sy], [r, sy + .08], [r, sy + .2], [.13, sy + .28]); sy += .62; }
+    sp.push([.12, sy], [.42, sy + .1], [.12, sy + .3], [.3, sy + .75], [.1, sy + 1.2], [.04, sy + 3.2], [0, sy + 3.25]); B.add(PT, 'metal', lathe(sp, 14), TM(bx, yy, bz), 1.2);
+    FARPOS.baochu = [bx, by, bz]; addGlow(bx, by + 22, bz, 0xffe2b0, 70); }
   // 三潭石塔：球形塔身中空，五个圆孔
   SANTAN.forEach(p => { const x = p[0], z = p[1];
     B.add('santan', 'stone', new THREE.CylinderGeometry(.34, .42, 3.0, 10), TM(x, -.9, z), .86); B.add('santan', 'stone', new THREE.CylinderGeometry(.62, .5, .14, 12), TM(x, .66, z));

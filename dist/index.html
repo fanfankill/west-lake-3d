@@ -143,7 +143,7 @@ body.film #film{display:block}
       <button class="act" id="a-imm" aria-pressed="false">沉浸模式</button>
       <button class="act" id="a-music" aria-pressed="false">配乐</button>
     </div>
-    <p class="tip">环湖一周约三分钟，沿途四季流转，配乐随之响起（按 M 开关）。沉浸模式隐藏全部界面，按 H 或 Esc 恢复。点湖面起涟漪，入夜可放荷灯。</p>
+    <p class="tip">环湖一周约四分半钟，镜头逐一贴近各处景点，沿途四季流转，配乐随之响起（按 M 开关）。沉浸模式隐藏全部界面，按 H 或 Esc 恢复。点湖面起涟漪，入夜可放荷灯。</p>
   </div>
   <div class="row"><label for="op">整体透明度<b id="op-v" style="letter-spacing:.05em;font-variant-numeric:tabular-nums">100%</b></label>
     <input type="range" id="op" min="8" max="100" value="100">
@@ -212,17 +212,19 @@ const MD = {
   lawn:    { dt: 'lawn', c: 0x7fa85e, t: 'l', snow: .96, season: [0x7fa664, 0x5e9449, 0x9a9c58, 0xa8ae98] },
   paving:  { c: 0xc4bfb1, t: 'l', snow: .85 },
   farLand: { dt: 'lawn', c: 0x7fae68, t: 'l', snow: .95, season: [0x7c9f62, 0x5a8a4c, 0x94935a, 0xa6ac98] },
-  hill1:   { dt: 'hill', c: 0x5f9a62, t: 'l', snow: .9, season: [0x5f9358, 0x3f7748, 0x8a7c48, 0x86948c] },
+  hill1:   { dt: 'hill', c: 0x4a7a48, t: 'l', snow: .3, season: [0x4c7c48, 0x2f6238, 0x6a6a3a, 0x4a6050] },
   hill2:   { dt: 'hill', c: 0x6fa27a, t: 'l', snow: .9, season: [0x6c9a74, 0x4a7f5e, 0x8c8862, 0x94a29e] },
   hill3:   { dt: 'hill', c: 0x86ad9a, t: 'l', snow: .9, season: [0x8aaa9c, 0x6a9684, 0x9c9a88, 0xa6b2b2] },
+  copper:  { dt: 'tile', bump: .014, shin: 30, spec: 0x3a2c20, c: 0x5e4a39, t: 'p', snow: 1, jit: .1, glow: 0xff9a3c, gi: .22 },
+  pagodaW: { dt: 'plaster', bump: .003, c: 0xd8c298, t: 'p', snow: .5, jit: .03, glow: 0xffb04a, gi: .6 },
   pagoda:  { c: 0x6d4a34, t: 'l', snow: .5, glow: 0xffb04a, gi: .95 },
-  brick:   { c: 0x94897a, t: 'l', snow: .5, glow: 0xffe2b0, gi: .5 },
+  brick:   { dt: 'brick', c: 0xa39683, t: 'l', snow: .5, glow: 0xffe2b0, gi: .5 },
   willow:  { tex: 'willow', c: 0x8cc05c, t: 'l', snow: .35, sway: 1, side: 2, season: [0xa5c95a, 0x55913f, 0xa39c44, 0xa5966c] },
   peach:   { tex: 'blossom', c: 0xf2a9bd, t: 'l', side: 2, snow: .9, sway: 1, leaf: [1, 1, .95, 0], season: [0xf09db6, 0x528c47, 0xad7d34, 0x8c8072] },
   plane:   { tex: 'broad', c: 0x6faa55, t: 'l', side: 2, snow: .9, sway: 1, leaf: [.96, 1, 1, 0], season: [0x86b55a, 0x3f7a42, 0xb9812e, 0x8c8072] },
   maple:   { tex: 'maple', c: 0x6faa55, t: 'l', side: 2, snow: .9, sway: 1, leaf: [.96, 1, 1, 0], season: [0x7fb25a, 0x478346, 0xb83d26, 0x8c8072] },
   ginkgo:  { tex: 'ginkgo', c: 0x6faa55, t: 'l', side: 2, snow: .9, sway: 1, leaf: [.95, 1, 1, 0], season: [0x92bd60, 0x508a46, 0xe6b526, 0x8c8072] },
-  camphor: { tex: 'broad', c: 0x3f7f4a, t: 'l', side: 2, snow: .75, sway: 1, season: [0x548c4b, 0x2f6638, 0x3d6b3b, 0x416650] },
+  camphor: { tex: 'broad', c: 0x3f7f4a, t: 'l', side: 2, snow: .55, sway: 1, season: [0x548c4b, 0x2f6638, 0x3d6b3b, 0x416650] },
   plum:    { tex: 'blossom', c: 0x5d9c52, t: 'l', side: 2, snow: .2, sway: 1, leaf: [1, 1, .9, .42], season: [0x74a658, 0x478346, 0x967e3c, 0xe0567c] },
   shrub:   { tex: 'shrub', c: 0x4c8a4c, t: 'l', side: 2, snow: .9, sway: 1, season: [0x548e4b, 0x366d3b, 0x52743c, 0x476a4f] },
   azalea:  { tex: 'shrub', c: 0xd9518c, t: 'l', side: 2, snow: .9, sway: 1, season: [0xea6fa6, 0x437c43, 0x5f7c3e, 0x4e6c52] },
@@ -248,7 +250,8 @@ const DETAIL = {
   bark: 'diffuseColor.rgb*=.76+.4*wn(vec2(q.x*16.,q.y*1.6));',
   lawn: 'float a=wn(vWp.xz*.06),b=wn(vWp.xz*.9),c=wn(vWp.xz*4.3+1.7);float fd=clamp(1.-.007/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.84+.3*a)*mix(1.,.88+.14*b+.12*c,fd);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.08,1.02,.8),smoothstep(.55,.8,wn(vWp.xz*.021+5.))*.35);',
   canopy: 'diffuseColor.rgb*=.7+.62*wn(vWp.xy*.55)*wn(vWp.zy*.6+3.7);',
-  hill: 'float a=wn(vWp.xz*.009),b=wn(vWp.xz*.07),c=wn(vWp.xz*.13),e=wn(vWp.xz*.47+3.1);float fd=clamp(1.-.0016/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.9+.1*a+.1*b*fd)*mix(1.,.76+.28*c+.24*e,fd);'
+  brick: 'float fd=clamp(1.-.004/gl_FragCoord.w,0.,1.),row=floor(q.y*4.5),cx=q.x*2.2+mod(row,2.)*.5,mt=smoothstep(0.,.07,fract(cx))*smoothstep(0.,.13,fract(q.y*4.5));diffuseColor.rgb*=(.82+.3*wn(q*1.9))*mix(1.,mix(.66,1.,mt)*(.9+.2*fract(sin(row*12.9+floor(cx)*78.2)*43758.5)),fd);',
+  hill: 'float a=wn(vWp.xz*.009),b=wn(vWp.xz*.07),c=wn(vWp.xz*.13),e=wn(vWp.xz*.47+3.1);float fd=clamp(1.-.0016/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.9+.1*a+.1*b*fd)*mix(1.,.56+.5*c+.4*e,fd);'
 };
 function patchMat(m, d) {
   const dt = d.dt && DETAIL[d.dt], bump = dt && d.t === 'p' && d.bump;
@@ -581,15 +584,15 @@ function roofPt(o, k, u, t) {
   return [o.cx + nx * ap + ex * hw * u, o.cy + y, o.cz + nz * ap + ez * hw * u];
 }
 function buildRoof(pTile, pRidge, o, q = {}) {
-  const Bq = q.B || B, N = o.rect ? 4 : o.sides, nu = q.nu || 12, nt = q.nt || 10, sp = q.sp || 0.27;
+  const Bq = q.B || B, N = o.rect ? 4 : o.sides, nu = q.nu || 12, nt = q.nt || 10, sp = q.sp || 0.27, sc = q.sc || 1, TL = q.tile || 'tile', RG = q.ridge || 'ridge';
   for (let k = 0; k < N; k++) {
     const pos = [], pos2 = [], idx = [], idx2 = [];
     for (let i = 0; i <= nt; i++) for (let j = 0; j <= nu; j++) { const p = roofPt(o, k, j / nu * 2 - 1, i / nt); pos.push(p[0], p[1], p[2]); pos2.push(p[0], p[1] - 0.1, p[2]); }
     for (let i = 0; i < nt; i++) for (let j = 0; j < nu; j++) { const a = i * (nu + 1) + j, b = a + 1, c = a + nu + 1, d = c + 1; idx.push(a, b, c, b, d, c); idx2.push(a, c, b, b, c, d); }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); Bq.add(pTile, 'tile', g, null, .86);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); Bq.add(pTile, TL, g, null, .86);
     const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g2.setIndex(idx2); g2.computeVertexNormals(); Bq.add(pTile, 'woodDk', g2, null, 1);
     // 瓦面与望板各补一份反向的面：无论从哪一侧看，朝上的总是瓦、朝下的总是木
-    const g3 = new THREE.BufferGeometry(); g3.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g3.setIndex(idx2); g3.computeVertexNormals(); Bq.add(pTile, 'tile', g3, null, .86);
+    const g3 = new THREE.BufferGeometry(); g3.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g3.setIndex(idx2); g3.computeVertexNormals(); Bq.add(pTile, TL, g3, null, .86);
     const g4 = new THREE.BufferGeometry(); g4.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g4.setIndex(idx); g4.computeVertexNormals(); Bq.add(pTile, 'woodDk', g4, null, 1);
     // 瓦垄
     const e0 = roofPt(o, k, -1, 1), e1 = roofPt(o, k, 1, 1), wE = Math.hypot(e1[0] - e0[0], e1[2] - e0[2]) / 2, nr = Math.floor(wE * 2 / sp);
@@ -599,19 +602,19 @@ function buildRoof(pTile, pRidge, o, q = {}) {
         const t = i / nt, a0 = roofPt(o, k, -1, t), a1 = roofPt(o, k, 1, t), w = Math.hypot(a1[0] - a0[0], a1[2] - a0[2]) / 2, u = w > 1e-3 ? s / w : 9;
         if (Math.abs(u) > 0.97) { if (prev && i < nt) { // 收到戗脊
             const t2 = (i + 1) / nt; let lo = t, hi = t2; for (let b = 0; b < 6; b++) { const m = (lo + hi) / 2, c0 = roofPt(o, k, -1, m), c1 = roofPt(o, k, 1, m); if (Math.abs(s) / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2) > .97) lo = m; else hi = m; }
-            const c0 = roofPt(o, k, -1, hi), c1 = roofPt(o, k, 1, hi), p = roofPt(o, k, s / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2), hi); p[1] += .045; Bq.seg(pTile, 'tile', prev, p, .12, .08);
+            const c0 = roofPt(o, k, -1, hi), c1 = roofPt(o, k, 1, hi), p = roofPt(o, k, s / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2), hi); p[1] += .045 * sc; Bq.seg(pTile, TL, prev, p, .12 * sc, .08 * sc);
           } break; }
-        const p = roofPt(o, k, u, t); p[1] += .045; if (prev) Bq.seg(pTile, 'tile', prev, p, .12, .08); prev = p;
+        const p = roofPt(o, k, u, t); p[1] += .045 * sc; if (prev) Bq.seg(pTile, TL, prev, p, .12 * sc, .08 * sc); prev = p;
       }
     }
     // 戗脊 + 翼角
     let prev = null; const nh = 14;
-    for (let i = 0; i <= nh; i++) { const p = roofPt(o, k, 1, i / nh); p[1] += .1; if (prev) Bq.seg(pRidge, 'ridge', prev, p, .2, .22, .95); prev = p; }
+    for (let i = 0; i <= nh; i++) { const p = roofPt(o, k, 1, i / nh); p[1] += .1; if (prev) Bq.seg(pRidge, RG, prev, p, .2 * sc, .22 * sc, .95); prev = p; }
     const pa = roofPt(o, k, 1, 1), pb = roofPt(o, k, 1, .86); let dx = pa[0] - pb[0], dz = pa[2] - pb[2]; const dl = Math.hypot(dx, dz); dx /= dl; dz /= dl;
-    const t1 = [pa[0] + dx * .32, pa[1] + .26, pa[2] + dz * .32], t2 = [pa[0] + dx * .5, pa[1] + .62, pa[2] + dz * .5];
-    Bq.seg(pRidge, 'ridge', [pa[0], pa[1] + .1, pa[2]], t1, .16, .18, .95); Bq.seg(pRidge, 'ridge', t1, t2, .11, .12, .95);
+    const t1 = [pa[0] + dx * .32 * sc, pa[1] + .26 * sc, pa[2] + dz * .32 * sc], t2 = [pa[0] + dx * .5 * sc, pa[1] + .62 * sc, pa[2] + dz * .5 * sc];
+    Bq.seg(pRidge, RG, [pa[0], pa[1] + .1, pa[2]], t1, .16 * sc, .18 * sc, .95); Bq.seg(pRidge, RG, t1, t2, .11 * sc, .12 * sc, .95);
     // 檐口
-    for (let j = 0; j < nu; j++) { const a = roofPt(o, k, j / nu * 2 - 1, 1), b = roofPt(o, k, (j + 1) / nu * 2 - 1, 1); a[1] -= .03; b[1] -= .03; Bq.seg(pTile, 'ridge', a, b, .09, .13, 1); }
+    for (let j = 0; j < nu; j++) { const a = roofPt(o, k, j / nu * 2 - 1, 1), b = roofPt(o, k, (j + 1) / nu * 2 - 1, 1); a[1] -= .03; b[1] -= .03; Bq.seg(pTile, RG, a, b, .09 * sc, .13 * sc, 1); }
   }
 }
 // 挂落：枋下的木格花饰
@@ -1176,13 +1179,13 @@ function buildFar() {
     const KIND = ['camphor', 'plane', 'camphor', 'ginkgo', 'camphor', 'maple', 'camphor', 'plane', 'peach'], fInv = r => Math.pow(clamp(r, 0, 1), 1 / 1.25);
     if (shoreTrees && o.near) { // 近山：水边一排、山脚成片，都是带叶面的树
       for (let i = 0, c = 0; i < n; i += 1.9 / (step * 6) / shoreTrees, c++) { const p = at(i + rr(-.3, .3), fInv(rr(.085, .2))); treeFar('far-hill', KIND[c % 9], p[0], p[1], p[2], rr(.8, 1.15)); }
-      for (let c = 0; c < (o.slope || 0); c++) { const p = at(rr(n * .03, n * .97), fInv(.235 + .34 * Math.pow(rnd(), 1.6))); treeFar('far-hill', KIND[c % 8], p[0], p[1] - 1.2, p[2], rr(1.1, 1.7), 1); } }
+      const SK = ['camphor', 'camphor', 'camphor', 'plane', 'camphor', 'camphor', 'maple', 'camphor', 'camphor', 'ginkgo']; for (let c = 0; c < (o.slope || 0); c++) { const p = at(rr(n * .02, n * .98), fInv(.235 + .57 * Math.pow(rnd(), 1.35))); treeFar('far-hill', SK[c % 10], p[0], p[1] - 1.2, p[2], rr(1.15, 1.8), 1); } }
     else if (shoreTrees) for (let i = 0; i < n; i += .3 / shoreTrees / (step / 1.1)) { const hr = HR(i), rs = hr[2] - D - A * rr(.2, .85), sz = rr(7, 10); blob('far-hill', i % 9 < 1 ? 'farPeach' : 'farTree', Math.cos(hr[0]) * rs, 1.2 + sz * .6, Math.sin(hr[0]) * rs, sz, sz * rr(.8, 1.1), sz, rr(.78, 1.05), 0, 0); }
     return deg => HR((deg - a0) / (a1 - a0) * n);
   };
   // 南山在苏堤以西向外退开，让出西里湖
-  FARPOS.southH = ridge('hill1', 780, 96, 172, 95, 150, 3, [], 1, { step: .4, near: 1, slope: 540, Rf: ad => sstep(108, 138, ad) * 240 });
-  const northH = FARPOS.northH = ridge('hill1', 1080, 236, 300, 105, 190, 11, [[262, 55, 5]], 1, { step: .35, near: 1, slope: 500 });
+  FARPOS.southH = ridge('hill1', 780, 96, 172, 95, 150, 3, [], 1, { step: .4, near: 1, slope: 1150, Rf: ad => sstep(108, 138, ad) * 240 });
+  const northH = FARPOS.northH = ridge('hill1', 1080, 236, 300, 105, 190, 11, [[262, 55, 5]], 1, { step: .35, near: 1, slope: 1050 });
   ridge('hill2', 1650, 88, 270, 210, 330, 21, [[168, 60, 9], [206, 90, 8]], 1.6, { step: .55, bump: 9, rows: 26 }); ridge('hill3', 2700, 70, 292, 300, 480, 33, [[160, 120, 7], [200, 170, 7]], 0, { step: .8, bump: 12, rows: 18 });
   ridge('hill3', 2500, -70, 75, 70, 300, 47, [], 0, { step: .9, bump: 8, rows: 16 });
   // 苏堤：长堤卧波，六桥（自北而南：跨虹、东浦、压堤、望山、锁澜、映波），桃柳相间
@@ -1198,16 +1201,62 @@ function buildFar() {
   const lx = -330, lz = 560, lh = 46;
   const lf = hillField('far-hill', 'hill1', lx, lz + 20, 150, 130, lh + 2, 5, 80, 70, .4);
   for (let i = 0; i < 300; i++) { const a = rnd() * TAU, r = Math.sqrt(rnd()) * .96, x = lx + Math.cos(a) * r * 150, z = lz + 20 + Math.sin(a) * r * 130; if (Math.hypot(x - lx, z - lz) < 24) continue; treeFar('far-hill', ['camphor', 'plane', 'camphor', 'maple', 'ginkgo', 'camphor'][i % 6], x, lf(x, z) - .8, z, rr(.85, 1.3)); }
-  let y = lf(lx, lz) - 6; B.add('far-leifeng', 'stone', new THREE.CylinderGeometry(19, 21, 9, 8), TM(lx, y + 4.5, lz), .9); y += 9;
-  for (let i = 0; i < 5; i++) { const rb = 9.6 - i * .95, hb = 9.2 - i * .5; B.add('far-leifeng', 'pagoda', new THREE.CylinderGeometry(rb * .96, rb, hb, 8), TM(lx, y + hb / 2, lz, PI / 8), 1.15);
-    B.add('far-leifeng', 'pagoda', new THREE.CylinderGeometry(rb + 2.4, rb + 2.4, .5, 8), TM(lx, y + .3, lz, PI / 8), .8);
-    farRoof(lx, y + hb - 1.2, lz, rb * .9, rb + 4.6, 2.6, .55); y += hb; }
-  farRoof(lx, y - .4, lz, .3, 6.6, 7, .55); B.add('far-leifeng', 'gold', new THREE.CylinderGeometry(.25, .7, 9, 8), TM(lx, y + 10.5, lz)); B.add('far-leifeng', 'gold', new THREE.SphereGeometry(1.3, 10, 8), TM(lx, y + 7.2, lz));
-  addGlow(lx, lh + 34, lz, 0xffb24a, 150); addGlow(lx, lh + 62, lz, 0xffd27a, 60);
-  // 保俶塔（宝石山上，六面七层实心砖塔）
-  const bh = northH(262), ba = bh[0], bx = Math.cos(ba) * (bh[2] - 3), bz = Math.sin(ba) * (bh[2] - 3), by = bh[1] - 2.5; let yy = by;
-  for (let i = 0; i < 7; i++) { const r0 = 5.2 - i * .55, hh = 5.6 - i * .25; B.add('far-baochu', 'brick', new THREE.CylinderGeometry(r0 - .5, r0, hh, 6), TM(bx, yy + hh / 2, bz)); B.add('far-baochu', 'brick', new THREE.CylinderGeometry(r0 + .5, r0 + .1, .5, 6), TM(bx, yy + hh, bz), .8); yy += hh; }
-  B.add('far-baochu', 'metal', new THREE.CylinderGeometry(.12, .8, 10, 6), TM(bx, yy + 5, bz)); FARPOS.baochu = [bx, by, bz]; addGlow(bx, by + 22, bz, 0xffe2b0, 70);
+  // 八面五层楼阁式塔：两层石台基带栏杆踏步；每层有平座回廊与栏杆、内外两圈朱柱、额枋斗栱、槅扇门与槛窗；铜瓦翘角；金色塔刹
+  { const PT = 'far-leifeng', T8 = Math.tan(PI / 8), C8 = Math.cos(PI / 8), yb = lf(lx, lz) - 6;
+    const FP = (k, ap, u, y, out = 0) => { const a = k * PI / 4, nx = Math.sin(a), nz = Math.cos(a); return [lx + nx * (ap + out) + nz * u, y, lz + nz * (ap + out) - nx * u]; };
+    const fb = (k, mat, ap, u, y, out, su, sy, sn, tint) => { const p = FP(k, ap, u, y, out); B.box(PT, mat, p[0], p[1], p[2], su, sy, sn, k * PI / 4, tint); };
+    const oct = (mat, ap0, ap1, y0, h, tint) => B.add(PT, mat, new THREE.CylinderGeometry(ap1 / C8, ap0 / C8, h, 8), TM(lx, y0 + h / 2, lz, PI / 8), tint);
+    const ringLine = ap => { const o = []; for (let k = 0; k <= 8; k++) { const p = FP(k % 8, ap, -ap * T8, 0); o.push([p[0], p[2]]); } return o; };
+    // 台基两层
+    oct('stone', 25, 24, yb - 3, 6.2, .86); oct('slab', 23.6, 23.6, yb + 3.2, .08, 1.06); stoneRail(PT, ringLine(23.3), () => yb + 3.22, 2.9);
+    oct('stone', 17.2, 16.6, yb + 3.2, 3.6, .93); oct('slab', 16.2, 16.2, yb + 6.8, .08, 1.08); stoneRail(PT, ringLine(15.9), () => yb + 6.82, 2.7);
+    [0, 4].forEach(k => { for (let i = 0; i < 9; i++) fb(k, 'stone', 16.6, 0, yb + 6.6 - i * .4, .3 + i * .42, 5.2, .4, .5, .97 - i * .01); for (let i = 0; i < 12; i++) fb(k, 'stone', 24.2, 0, yb + 3.0 - i * .42, .3 + i * .45, 7, .42, .55, .95 - i * .01); });
+    let y0 = yb + 6.86;
+    for (let i = 0; i < 5; i++) { const ap = 8.6 - i * .9, H = 7.6 - i * .4, hw = ap * T8, apo = ap + 2.5, yt = y0 + H;
+      if (i) { oct('woodDk', apo - 1.5, apo + .25, y0 - .95, .7, .9); oct('wood', apo + .3, apo + .3, y0 - .25, .28, .82);                                // 平座：斗栱托着的回廊
+        for (let k = 0; k < 8; k++) { const hwo = (apo + .1) * T8; for (let j = -2; j <= 2; j++) fb(k, 'wood', apo + .1, j * hwo / 2.5, y0 + .55, 0, .14, 1.1, .14, .9);
+          [.35, .75, 1.08].forEach((yy, q) => fb(k, q === 2 ? 'woodDk' : 'wood', apo + .1, 0, y0 + yy, 0, hwo * 2, q === 2 ? .12 : .08, q === 2 ? .16 : .07, .9)); } }
+      oct('pagodaW', ap, ap, y0, H, 1); oct('stone', ap + .12, ap + .12, y0, .5, .92); oct('woodDk', ap + .16, ap + .16, yt - 1.25, .75, .95); oct('wood', ap + .1, ap + .1, yt - 1.6, .32, .85);
+      for (let k = 0; k < 8; k++) { const hwo = apo * T8;
+        [[ap + .05, hw, .34, yt - .5], [apo, hwo, .27, yt - 1.5]].forEach(c => { const p = FP(k, c[0], c[1], 0); B.add(PT, 'wood', new THREE.CylinderGeometry(c[2] * .92, c[2], c[3] - y0, 10), TM(p[0], (y0 + c[3]) / 2, p[2])); B.add(PT, 'stone', new THREE.CylinderGeometry(c[2] * 1.5, c[2] * 1.7, .3, 10), TM(p[0], y0 + .15, p[2])); });
+        fb(k, 'woodDk', apo, 0, yt - 1.35, 0, hwo * 2, .42, .3, .95); fb(k, 'wood', apo, 0, yt - 1.78, 0, hwo * 2, .26, .2, .85);                                        // 檐柱间的额枋
+        for (let j = -2; j <= 2; j++) { const u = j * hwo / 2.6; fb(k, 'woodDk', apo, u, yt - .95, .25, .34, .3, .9, .92); fb(k, 'wood', apo, u, yt - .68, .62, .62, .2, .26, .85); fb(k, 'woodDk', ap, u * hw / hwo, yt - .7, 1.2, .26, .22, 2.2, .9); }   // 斗栱与挑檐枋
+        const dw = Math.min(2.5, hw * 1.05), dh = H * .52, door = k % 2 === 0;
+        if (door) { fb(k, 'woodDk', ap, 0, y0 + .5 + dh / 2, .05, dw + .3, dh + .3, .12, .9); fb(k, 'lampGl', ap, 0, y0 + .5 + dh * .62, .13, dw - .1, dh * .7, .04, 1); fb(k, 'wood', ap, 0, y0 + .5 + dh * .14, .13, dw - .1, dh * .26, .05, .9);
+          for (let q = 1; q < 4; q++) fb(k, 'woodDk', ap, -dw / 2 + q * dw / 4, y0 + .5 + dh / 2, .17, q === 2 ? .1 : .05, dh, .05); for (let q = 1; q < 6; q++) fb(k, 'woodDk', ap, 0, y0 + .5 + dh * (.28 + q * .12), .17, dw - .1, .045, .04);
+          fb(k, 'plaque', ap, 0, y0 + .5 + dh + .75, .1, dw * .7, .7, .1, 1); fb(k, 'gold', ap, 0, y0 + .5 + dh + .75, .16, dw * .5, .3, .02, 1); }
+        else { const ww = Math.min(2.2, hw * .95), wh = H * .3, wy = y0 + H * .46; fb(k, 'woodDk', ap, 0, wy, .05, ww + .26, wh + .26, .12, .9); fb(k, 'lampGl', ap, 0, wy, .13, ww, wh, .04, 1);
+          for (let q = 1; q < 6; q++) fb(k, 'woodDk', ap, -ww / 2 + q * ww / 6, wy, .17, .045, wh, .04); for (let q = 1; q < 4; q++) fb(k, 'woodDk', ap, 0, wy - wh / 2 + q * wh / 4, .17, ww, .045, .04); fb(k, 'stone', ap, 0, wy - wh / 2 - .28, .12, ww + .5, .16, .3, .95); }
+      }
+      const top = i === 4;
+      buildRoof(PT, PT, { sides: 8, rTop: top ? .6 : ap - .5, rEave: ap + 5.0, h: top ? 7.2 : 2.5, sag: top ? .3 : .2, lift: top ? 1.7 : 1.5, flare: .55, cx: lx, cy: yt - .35, cz: lz, rot: 0 }, { sp: .78, nu: 8, nt: top ? 8 : 5, tile: 'copper', ridge: 'copper', sc: 2.3 });
+      for (let k = 0; k < 8; k++) { const p = FP(k, ap + 5.0, (ap + 5.0) * T8, 0); addGlow(p[0] * .985 + lx * .015, yt + .6, p[2] * .985 + lz * .015, 0xffc070, 2.2); }       // 檐角灯
+      y0 = yt + (top ? 6.75 : 2.05);
+    }
+    // 塔刹：覆钵、七重相轮、宝盖、宝珠
+    const sp = [[0, 0], [1.9, 0], [2.05, .35], [1.7, 1.1], [.9, 1.6], [.34, 1.8]]; let sy = 1.9;
+    for (let j = 0; j < 7; j++) { const r = 1.5 - j * .12; sp.push([.3, sy], [r, sy + .14], [r, sy + .36], [.3, sy + .5]); sy += .74; }
+    sp.push([.26, sy], [1.15, sy + .1], [1.2, sy + .3], [.3, sy + .5], [.2, sy + .9], [.62, sy + 1.25], [.7, sy + 1.6], [.45, sy + 2.05], [.12, sy + 2.3], [.06, sy + 3.5], [0, sy + 3.6]);
+    B.add(PT, 'gold', lathe(sp, 20), TM(lx, y0 - .2, lz), 1.1);
+    addGlow(lx, yb + 22, lz, 0xffb24a, 150); addGlow(lx, yb + 46, lz, 0xffd27a, 70); FARPOS.leifeng = [lx, yb, lz, y0 + sy + 3.4]; }
+  // 保俶塔（宝石山上）：六面七层实心砖塔，瘦削挺拔。石台、须弥座、每层叠涩出檐、六面券龛、转角倚柱，铁刹带七重相轮
+  { const PT = 'far-baochu', bh = northH(262), ba = bh[0], bx = Math.cos(ba) * (bh[2] - 3), bz = Math.sin(ba) * (bh[2] - 3), by = bh[1] - 1.5, C6 = Math.cos(PI / 6);
+    const hex = (mat, r0, r1, y, h, tint) => B.add(PT, mat, new THREE.CylinderGeometry(r1, r0, h, 6), TM(bx, y + h / 2, bz), tint);
+    const fb = (k, mat, r, u, y, out, su, sy, sn, tint) => { const a = (k + .5) * PI / 3, nx = Math.sin(a), nz = Math.cos(a), ap = r * C6 + out; B.box(PT, mat, bx + nx * ap + nz * u, y, bz + nz * ap - nx * u, su, sy, sn, a, tint); };
+    hex('rock', 9, 7.2, by - 9, 9.2, .9); hex('stone', 7, 6.8, by, 1.2, .9); hex('slab', 6.5, 6.5, by + 1.2, .08, 1.05);
+    { const ln = []; for (let k = 0; k <= 6; k++) { const a = k * PI / 3; ln.push([bx + Math.sin(a) * 6.2, bz + Math.cos(a) * 6.2]); } stoneRail(PT, ln, () => by + 1.24, 2.1); }
+    let yy = by + 1.28; [[4.9, 4.9, .5, .9], [4.5, 4.3, .35, 1], [4.1, 4.1, .9, .92], [4.4, 4.6, .3, 1], [4.7, 4.7, .25, .95]].forEach(q => { hex('stone', q[0], q[1], yy, q[2], q[3]); yy += q[2]; });   // 须弥座
+    for (let i = 0; i < 7; i++) { const r0 = 3.7 - i * .36, r1 = r0 - .2, hh = 5.4 - i * .3, fw = r0 * .5;
+      hex('brick', r0, r1, yy, hh, 1); hex('brick', r0 + .12, r0 + .1, yy, .35, .86);
+      for (let k = 0; k < 6; k++) { const a = k * PI / 3; B.add(PT, 'brick', new THREE.CylinderGeometry(.2, .22, hh, 6), TM(bx + Math.sin(a) * (r0 - .12), yy + hh / 2, bz + Math.cos(a) * (r0 - .12)), .88);        // 转角倚柱
+        const nh = hh * .46, ny = yy + hh * .42; fb(k, 'brick', r0 - .1, 0, ny, .02, fw + .3, nh + .3, .16, .84); fb(k, 'plaque', r0 - .1, 0, ny - .04, .08, fw, nh - .08, .08, 1.6);                                         // 券龛
+        fb(k, 'brick', r0 - .1, 0, ny + nh / 2 + .22, .06, fw + .5, .14, .2, .8); fb(k, 'brick', r0 - .1, 0, yy + hh - .5, .0, r0 * .9, .16, .14, .82); }
+      yy += hh; [[.18, .86], [.42, .94], [.7, .86], [1.0, .97], [.62, .8], [.3, .9]].forEach((q, j) => { hex(j === 3 ? 'stone' : 'brick', r1 + q[0] - (j < 4 ? .12 : 0), r1 + q[0], yy, .17, q[1]); yy += .17; });               // 叠涩出檐
+    }
+    hex('brick', 1.5, .5, yy, 1.3, .9); yy += 1.3;
+    const sp = [[0, 0], [.75, 0], [.8, .2], [.5, .7], [.16, .9]]; let sy = 1.0; for (let j = 0; j < 7; j++) { const r = .62 - j * .055; sp.push([.13, sy], [r, sy + .08], [r, sy + .2], [.13, sy + .28]); sy += .62; }
+    sp.push([.12, sy], [.42, sy + .1], [.12, sy + .3], [.3, sy + .75], [.1, sy + 1.2], [.04, sy + 3.2], [0, sy + 3.25]); B.add(PT, 'metal', lathe(sp, 14), TM(bx, yy, bz), 1.2);
+    FARPOS.baochu = [bx, by, bz]; addGlow(bx, by + 22, bz, 0xffe2b0, 70); }
   // 三潭石塔：球形塔身中空，五个圆孔
   SANTAN.forEach(p => { const x = p[0], z = p[1];
     B.add('santan', 'stone', new THREE.CylinderGeometry(.34, .42, 3.0, 10), TM(x, -.9, z), .86); B.add('santan', 'stone', new THREE.CylinderGeometry(.62, .5, .14, 12), TM(x, .66, z));
@@ -1744,16 +1793,38 @@ function walkAt(t) {
 function startWalk() { cycle(false); if (lap.on) stopLap(); setFocus(null); walk.on = true; walk.t = 0; $('#a-walk').setAttribute('aria-pressed', true); $('#a-walk').textContent = '结束漫步'; $('#card').hidden = false; showCard('湖畔漫步', '从午后走到入夜', '镜头贴着湖面靠岸，踏上九曲桥，一折一景走进亭中；日头西沉，灯一盏盏亮起来，最后回望水里的亭影。拖动画面可随时接管视角。', [['结束漫步', stopWalk]]); markSel(null); }
 function stopWalk() { if (!walk.on) return; walk.on = false; $('#a-walk').setAttribute('aria-pressed', false); $('#a-walk').textContent = '湖畔漫步'; if (CAM.free) { const o = poseToOrbit(walk.p.toArray(), walk.l.toArray()); CAM.free = null; Object.assign(CAM.d, { th: o.th, ph: o.ph, r: o.r }); CAM.d.t.copy(o.t); CAM.t.copy(o.t); CAM.th = o.th; CAM.ph = o.ph; CAM.r = o.r; } setTod(ST.tod > .75 ? 1 : ST.tod > .3 ? .5 : 0); }
 // 环湖一周：沿湖心一侧的闭合航线匀速飞行，东岸起春、南岸入夏、西堤逢秋、北岸落雪，回到东岸又是一春
-const LAP = [[-75, 16, 10], [-62, 22, 150], [-110, 30, 310], [-225, 34, 400], [-390, 26, 360], [-480, 22, 200], [-500, 20, 0], [-492, 22, -200], [-460, 26, -400], [-385, 28, -470], [-225, 22, -496], [-85, 20, -545], [-28, 24, -380], [-58, 20, -160]];
-const lapCurve = new THREE.CatmullRomCurve3(LAP.map(p => new V3(p[0], p[1], p[2])), true, 'centripetal'), LAP_T = 180, _la = new V3();
-const SIGHTS = [['集贤亭 · 九曲桥', -36, -6], ['雷峰塔', -330, 560], ['净慈寺 · 南屏晚钟', -128, 560], ['小瀛洲 · 三潭印月', -215, 70], ['苏堤', -545, 250], ['苏堤', -575, -150], ['阮公墩', -410, -110], ['湖心亭', -300, -231], ['孤山', -360, -560], ['平湖秋月', -176, -548], ['白堤', -80, -600], ['断桥', 5, -638]];
-const lap = { on: false, t: 0, cap: '' };
-function lapAt(u) {
-  u = ((u % 1) + 1) % 1; lapCurve.getPointAt(u, walk.p); lapCurve.getPointAt((u + .05) % 1, _la);
-  const ox = _la.x + 280, oz = _la.z + 80, ol = Math.hypot(ox, oz) || 1; walk.l.set(_la.x + ox / ol * 42, 6, _la.z + oz / ol * 42);
-  CAM.free = { p: walk.p, l: walk.l }; CAM.fly = null; ST.season = TG.season = u * 4;
+// 环湖导览：路线贴近每一处景点，镜头提前转向它、同时浮出景名并放慢；经过之后放开镜头、景名隐去
+const LAP = [[-70, 9, 26], [-118, 12, 78], [-178, 5, 158], [-235, 7, 172], [-190, 12, 300], [-138, 12, 486], [-235, 30, 448], [-318, 64, 468], [-400, 40, 440], [-470, 14, 340],
+  [-505, 7, 215], [-512, 8, 90], [-522, 6, -8], [-480, 9, -70], [-440, 8, -150], [-365, 9, -190], [-345, 8, -275], [-380, 9, -400], [-385, 7, -470], [-300, 7, -478],
+  [-215, 6, -500], [-150, 6, -520], [-85, 7, -550], [-25, 8, -590], [0, 12, -540], [-30, 18, -400], [-60, 16, -230], [-78, 11, -90]];
+const lapCurve = new THREE.CatmullRomCurve3(LAP.map(p => new V3(p[0], p[1], p[2])), true, 'centripetal'), LAP_T = 270, LAP0 = .945, _la = new V3(), _lt = new V3(), _ls = new V3();
+// [景名, 注视点 x, y, z, 提前多少米开始看, 过了多少米放开]
+const TOUR = [['集贤亭 · 九曲桥', -30, 4, -5, 160, 10], ['小瀛洲 · 三潭印月', -212, 3, 116, 135, -22], ['净慈寺 · 南屏晚钟', -130, 9, 560, 175, 12], ['雷峰塔', -330, 76, 560, 150, 30],
+  ['苏堤 · 锁澜桥', -544, 4, 190, 150, 12], ['苏堤 · 望山桥', -563, 4, -30, 95, 8], ['阮公墩', -408, 4, -104, 80, 8], ['湖心亭', -300, 6, -231, 90, 10],
+  ['孤山', -360, 9, -524, 130, 6], ['平湖秋月', -178, 4, -550, 95, 4], ['白堤 · 断桥', -10, 4, -632, 120, -18]];
+const lap = { on: false, t: 0, cap: '', want: '', tab: null, sl: null };
+function lapSetup() {
+  const N = 1600, L = lapCurve.getLength(), P = [], w = new Float32Array(N), T = new Float32Array(N + 1); for (let i = 0; i < N; i++) P.push(lapCurve.getPointAt(i / N));
+  if (FARPOS.leifeng) TOUR[3][2] = FARPOS.leifeng[1] + 30;
+  TOUR.forEach(s => { let bd = 1e9, bi = 0; P.forEach((p, i) => { const d = Math.hypot(p.x - s[1], p.z - s[3]); if (d < bd) { bd = d; bi = i; } }); s.a = bi / N - s[4] / L; s.len = (s[4] + s[5]) / L; s.r = Math.min(85 / L, s.len * .45); s.dmin = bd; s.uc = bi / N; });
+  for (let i = 0; i < N; i++) { let sw = 0; for (const s of TOUR) sw += lapW(s, i / N); w[i] = Math.min(1, sw); }
+  for (let i = 0; i < N; i++) T[i + 1] = T[i] + 1 / (1 - .5 * w[i]);          // 对着景点的路段只走一半速度
+  lap.tab = { N, T, L };
 }
-function startLap() { if (music.pref !== false) setMusic(true); cycle(false); if (walk.on) stopWalk(); setFocus(null); lap.on = true; $('#a-lap').setAttribute('aria-pressed', true); $('#a-lap').textContent = '结束环湖'; markSel(null); $('#card').hidden = true; }
+function lapW(s, u) { const du = (((u - s.a) % 1) + 1) % 1; return du >= s.len ? 0 : sstep(0, s.r, du) * (1 - sstep(s.len - s.r, s.len, du)); }
+// 时间进度 τ（0–1）换算成路程进度 u
+function lapU(tau) { if (!lap.tab) lapSetup(); const { N, T } = lap.tab, x = ((tau % 1) + 1) % 1 * T[N]; let lo = 0, hi = N; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (T[m] <= x) lo = m; else hi = m; } return (lo + (x - T[lo]) / (T[lo + 1] - T[lo])) / N; }
+function lapAt(tau) {
+  const u = lapU(tau); lapCurve.getPointAt(u, walk.p); lapCurve.getPointAt((u + .03) % 1, _la);
+  const ox = _la.x + 280, oz = _la.z + 80, ol = Math.hypot(ox, oz) || 1; walk.l.set(_la.x + ox / ol * 22, Math.max(5, _la.y - 6), _la.z + oz / ol * 22);
+  // 按方位角、俯仰角混合（而不是在两个注视点之间连直线），景点转到身后时镜头也不会突然甩头
+  const dx = walk.l.x - walk.p.x, dy = walk.l.y - walk.p.y, dz = walk.l.z - walk.p.z, d0 = Math.hypot(dx, dy, dz), yaw0 = Math.atan2(dz, dx), pit0 = Math.atan2(dy, Math.hypot(dx, dz)); let sw = 0, bw = 0, best = '', dyaw = 0, dpit = 0;
+  for (const s of TOUR) { const w = lapW(s, u); if (w <= 0) continue; const sx = s[1] - walk.p.x, sy = s[2] - walk.p.y, sz = s[3] - walk.p.z; dyaw += w * ((((Math.atan2(sz, sx) - yaw0) % TAU) + TAU + PI) % TAU - PI); dpit += w * (Math.atan2(sy, Math.hypot(sx, sz)) - pit0); sw += w; if (w > bw) { bw = w; best = s[0]; } }
+  if (sw > 0) { const k = .95 / Math.max(1, sw), yaw = yaw0 + dyaw * k, pit = pit0 + dpit * k; walk.l.set(walk.p.x + Math.cos(pit) * Math.cos(yaw) * d0, walk.p.y + Math.sin(pit) * d0, walk.p.z + Math.cos(pit) * Math.sin(yaw) * d0); }
+  lap.want = bw > .3 ? best : '';
+  CAM.free = { p: walk.p, l: walk.l }; CAM.fly = null; ST.season = TG.season = ((((tau - LAP0) % 1) + 1) % 1) * 4;   // 从集贤亭前出发，四季从春天数起
+}
+function startLap() { lap.sl = null; lap.t = 0; if (music.pref !== false) setMusic(true); cycle(false); if (walk.on) stopWalk(); setFocus(null); lap.on = true; $('#a-lap').setAttribute('aria-pressed', true); $('#a-lap').textContent = '结束环湖'; markSel(null); $('#card').hidden = true; }
 function stopLap() { if (!lap.on) return; lap.on = false; $('#a-lap').setAttribute('aria-pressed', false); $('#a-lap').textContent = '环湖一周'; $('#cap').style.opacity = 0; lap.cap = '';
   if (CAM.free) { const o = poseToOrbit(walk.p.toArray(), walk.l.toArray()); CAM.free = null; Object.assign(CAM.d, { th: o.th, ph: o.ph, r: o.r }); CAM.d.t.copy(o.t); CAM.t.copy(o.t); CAM.th = o.th; CAM.ph = o.ph; CAM.r = o.r; }
   const k = ((Math.round(ST.season) % 4) + 4) % 4; ST.season = ((ST.season % 4) + 4) % 4; TG.season = ST.season; setSeason(k); }
@@ -1788,7 +1859,8 @@ WL.onTap = (cx, cy) => { const p = pickWater(cx, cy); if (!p) return; addRipple(
 WL.onUserMove = () => { if (walk.on) stopWalk(); if (lap.on) stopLap(); };
 WL.tick = (dt, t) => {
   if (walk.on) { walk.t += dt * .62; walkAt(walk.t); if (walk.t >= WALK_T) { stopWalk(); selectView('ting'); setTod(1); } if (Math.floor(walk.t * 1.3) !== Math.floor((walk.t - dt * .62) * 1.3) && walk.t > 8.6 && walk.t < 23) { /* 脚边的水纹 */ addRipple(walk.p.x + rr(-3, 3), walk.p.z + rr(-3, 3), .35); } }
-  if (lap.on) { lap.t += dt; lapAt(lap.t / LAP_T); let best = '', bd = 230; for (const s of SIGHTS) { const d = Math.hypot(s[1] - walk.p.x, s[2] - walk.p.z); if (d < bd) { bd = d; best = s[0]; } }
+  if (lap.on) { lap.t += dt; lapAt(LAP0 + lap.t / LAP_T); if (lap.sl) walk.l.copy(lap.sl.lerp(walk.l, 1 - Math.exp(-dt * 2.4))); else lap.sl = walk.l.clone(); const best = lap.want;   // 注视点再过一道缓动
+   
     if (best !== lap.cap) { lap.cap = best; const c = $('#cap'); c.style.opacity = 0; clearTimeout(lap.ct); if (best) lap.ct = setTimeout(() => { c.textContent = best; c.style.opacity = 1; }, 600); } }
   if (cyc.on) { if (!CAM.fly && !CAM.free && !walk.on) CAM.d.th += dt * .1; cyc.t += dt; if (cyc.t > 4.6 && ST.season === TG.season) { cyc.t = 0; setSeason((curSeason() + 1) % 4); } }
   if (ST.rain > .5 && Math.random() < dt * 2.5) { camera.getWorldDirection(_fw); addRipple(camera.position.x + _fw.x * 14 + rr(-10, 10), camera.position.z + _fw.z * 14 + rr(-10, 10), .3); }
@@ -1837,11 +1909,11 @@ function init() {
   frame(.016); $('#veil').classList.add('off'); WL.ready = true; requestAnimationFrame(loop);
 }
 requestAnimationFrame(() => setTimeout(() => { try { init(); } catch (e) { console.error(e); $('#veil').textContent = '场景加载失败：' + e.message; } }, 30));
-WL.api = { lapAt, startLap, setImmersive, setMusic, music, selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
+WL.api = { lapAt, lap, TOUR, lapU, LAP_T, LAP0, startLap, setImmersive, setMusic, music, selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
 WL.sync = () => { const gl = renderer.getContext(), px = new Uint8Array(4); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); return px[0]; };
 WL.info = () => ({ tris: renderer.info.render.triangles, calls: renderer.info.render.calls, meshes: MESHES.length, mats: MATS.length });
 WL.r = renderer; WL.water = water;
-WL.dbg = { MESHES, MATS, PARTS, sun, scene, sky, FL, lanterns, rip, koi };
+WL.dbg = { MESHES, MATS, PARTS, sun, scene, sky, FL, lanterns, rip, koi, FARPOS };
 
 })();
 </script>

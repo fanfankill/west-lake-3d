@@ -35,15 +35,15 @@ function roofPt(o, k, u, t) {
   return [o.cx + nx * ap + ex * hw * u, o.cy + y, o.cz + nz * ap + ez * hw * u];
 }
 function buildRoof(pTile, pRidge, o, q = {}) {
-  const Bq = q.B || B, N = o.rect ? 4 : o.sides, nu = q.nu || 12, nt = q.nt || 10, sp = q.sp || 0.27;
+  const Bq = q.B || B, N = o.rect ? 4 : o.sides, nu = q.nu || 12, nt = q.nt || 10, sp = q.sp || 0.27, sc = q.sc || 1, TL = q.tile || 'tile', RG = q.ridge || 'ridge';
   for (let k = 0; k < N; k++) {
     const pos = [], pos2 = [], idx = [], idx2 = [];
     for (let i = 0; i <= nt; i++) for (let j = 0; j <= nu; j++) { const p = roofPt(o, k, j / nu * 2 - 1, i / nt); pos.push(p[0], p[1], p[2]); pos2.push(p[0], p[1] - 0.1, p[2]); }
     for (let i = 0; i < nt; i++) for (let j = 0; j < nu; j++) { const a = i * (nu + 1) + j, b = a + 1, c = a + nu + 1, d = c + 1; idx.push(a, b, c, b, d, c); idx2.push(a, c, b, b, c, d); }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); Bq.add(pTile, 'tile', g, null, .86);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); Bq.add(pTile, TL, g, null, .86);
     const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g2.setIndex(idx2); g2.computeVertexNormals(); Bq.add(pTile, 'woodDk', g2, null, 1);
     // 瓦面与望板各补一份反向的面：无论从哪一侧看，朝上的总是瓦、朝下的总是木
-    const g3 = new THREE.BufferGeometry(); g3.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g3.setIndex(idx2); g3.computeVertexNormals(); Bq.add(pTile, 'tile', g3, null, .86);
+    const g3 = new THREE.BufferGeometry(); g3.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g3.setIndex(idx2); g3.computeVertexNormals(); Bq.add(pTile, TL, g3, null, .86);
     const g4 = new THREE.BufferGeometry(); g4.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g4.setIndex(idx); g4.computeVertexNormals(); Bq.add(pTile, 'woodDk', g4, null, 1);
     // 瓦垄
     const e0 = roofPt(o, k, -1, 1), e1 = roofPt(o, k, 1, 1), wE = Math.hypot(e1[0] - e0[0], e1[2] - e0[2]) / 2, nr = Math.floor(wE * 2 / sp);
@@ -53,19 +53,19 @@ function buildRoof(pTile, pRidge, o, q = {}) {
         const t = i / nt, a0 = roofPt(o, k, -1, t), a1 = roofPt(o, k, 1, t), w = Math.hypot(a1[0] - a0[0], a1[2] - a0[2]) / 2, u = w > 1e-3 ? s / w : 9;
         if (Math.abs(u) > 0.97) { if (prev && i < nt) { // 收到戗脊
             const t2 = (i + 1) / nt; let lo = t, hi = t2; for (let b = 0; b < 6; b++) { const m = (lo + hi) / 2, c0 = roofPt(o, k, -1, m), c1 = roofPt(o, k, 1, m); if (Math.abs(s) / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2) > .97) lo = m; else hi = m; }
-            const c0 = roofPt(o, k, -1, hi), c1 = roofPt(o, k, 1, hi), p = roofPt(o, k, s / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2), hi); p[1] += .045; Bq.seg(pTile, 'tile', prev, p, .12, .08);
+            const c0 = roofPt(o, k, -1, hi), c1 = roofPt(o, k, 1, hi), p = roofPt(o, k, s / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2), hi); p[1] += .045 * sc; Bq.seg(pTile, TL, prev, p, .12 * sc, .08 * sc);
           } break; }
-        const p = roofPt(o, k, u, t); p[1] += .045; if (prev) Bq.seg(pTile, 'tile', prev, p, .12, .08); prev = p;
+        const p = roofPt(o, k, u, t); p[1] += .045 * sc; if (prev) Bq.seg(pTile, TL, prev, p, .12 * sc, .08 * sc); prev = p;
       }
     }
     // 戗脊 + 翼角
     let prev = null; const nh = 14;
-    for (let i = 0; i <= nh; i++) { const p = roofPt(o, k, 1, i / nh); p[1] += .1; if (prev) Bq.seg(pRidge, 'ridge', prev, p, .2, .22, .95); prev = p; }
+    for (let i = 0; i <= nh; i++) { const p = roofPt(o, k, 1, i / nh); p[1] += .1; if (prev) Bq.seg(pRidge, RG, prev, p, .2 * sc, .22 * sc, .95); prev = p; }
     const pa = roofPt(o, k, 1, 1), pb = roofPt(o, k, 1, .86); let dx = pa[0] - pb[0], dz = pa[2] - pb[2]; const dl = Math.hypot(dx, dz); dx /= dl; dz /= dl;
-    const t1 = [pa[0] + dx * .32, pa[1] + .26, pa[2] + dz * .32], t2 = [pa[0] + dx * .5, pa[1] + .62, pa[2] + dz * .5];
-    Bq.seg(pRidge, 'ridge', [pa[0], pa[1] + .1, pa[2]], t1, .16, .18, .95); Bq.seg(pRidge, 'ridge', t1, t2, .11, .12, .95);
+    const t1 = [pa[0] + dx * .32 * sc, pa[1] + .26 * sc, pa[2] + dz * .32 * sc], t2 = [pa[0] + dx * .5 * sc, pa[1] + .62 * sc, pa[2] + dz * .5 * sc];
+    Bq.seg(pRidge, RG, [pa[0], pa[1] + .1, pa[2]], t1, .16 * sc, .18 * sc, .95); Bq.seg(pRidge, RG, t1, t2, .11 * sc, .12 * sc, .95);
     // 檐口
-    for (let j = 0; j < nu; j++) { const a = roofPt(o, k, j / nu * 2 - 1, 1), b = roofPt(o, k, (j + 1) / nu * 2 - 1, 1); a[1] -= .03; b[1] -= .03; Bq.seg(pTile, 'ridge', a, b, .09, .13, 1); }
+    for (let j = 0; j < nu; j++) { const a = roofPt(o, k, j / nu * 2 - 1, 1), b = roofPt(o, k, (j + 1) / nu * 2 - 1, 1); a[1] -= .03; b[1] -= .03; Bq.seg(pTile, RG, a, b, .09 * sc, .13 * sc, 1); }
   }
 }
 // 挂落：枋下的木格花饰

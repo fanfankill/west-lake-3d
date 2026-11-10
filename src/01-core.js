@@ -40,17 +40,19 @@ const MD = {
   lawn:    { dt: 'lawn', c: 0x7fa85e, t: 'l', snow: .96, season: [0x7fa664, 0x5e9449, 0x9a9c58, 0xa8ae98] },
   paving:  { c: 0xc4bfb1, t: 'l', snow: .85 },
   farLand: { dt: 'lawn', c: 0x7fae68, t: 'l', snow: .95, season: [0x7c9f62, 0x5a8a4c, 0x94935a, 0xa6ac98] },
-  hill1:   { dt: 'hill', c: 0x5f9a62, t: 'l', snow: .9, season: [0x5f9358, 0x3f7748, 0x8a7c48, 0x86948c] },
+  hill1:   { dt: 'hill', c: 0x4a7a48, t: 'l', snow: .3, season: [0x4c7c48, 0x2f6238, 0x6a6a3a, 0x4a6050] },
   hill2:   { dt: 'hill', c: 0x6fa27a, t: 'l', snow: .9, season: [0x6c9a74, 0x4a7f5e, 0x8c8862, 0x94a29e] },
   hill3:   { dt: 'hill', c: 0x86ad9a, t: 'l', snow: .9, season: [0x8aaa9c, 0x6a9684, 0x9c9a88, 0xa6b2b2] },
+  copper:  { dt: 'tile', bump: .014, shin: 30, spec: 0x3a2c20, c: 0x5e4a39, t: 'p', snow: 1, jit: .1, glow: 0xff9a3c, gi: .22 },
+  pagodaW: { dt: 'plaster', bump: .003, c: 0xd8c298, t: 'p', snow: .5, jit: .03, glow: 0xffb04a, gi: .6 },
   pagoda:  { c: 0x6d4a34, t: 'l', snow: .5, glow: 0xffb04a, gi: .95 },
-  brick:   { c: 0x94897a, t: 'l', snow: .5, glow: 0xffe2b0, gi: .5 },
+  brick:   { dt: 'brick', c: 0xa39683, t: 'l', snow: .5, glow: 0xffe2b0, gi: .5 },
   willow:  { tex: 'willow', c: 0x8cc05c, t: 'l', snow: .35, sway: 1, side: 2, season: [0xa5c95a, 0x55913f, 0xa39c44, 0xa5966c] },
   peach:   { tex: 'blossom', c: 0xf2a9bd, t: 'l', side: 2, snow: .9, sway: 1, leaf: [1, 1, .95, 0], season: [0xf09db6, 0x528c47, 0xad7d34, 0x8c8072] },
   plane:   { tex: 'broad', c: 0x6faa55, t: 'l', side: 2, snow: .9, sway: 1, leaf: [.96, 1, 1, 0], season: [0x86b55a, 0x3f7a42, 0xb9812e, 0x8c8072] },
   maple:   { tex: 'maple', c: 0x6faa55, t: 'l', side: 2, snow: .9, sway: 1, leaf: [.96, 1, 1, 0], season: [0x7fb25a, 0x478346, 0xb83d26, 0x8c8072] },
   ginkgo:  { tex: 'ginkgo', c: 0x6faa55, t: 'l', side: 2, snow: .9, sway: 1, leaf: [.95, 1, 1, 0], season: [0x92bd60, 0x508a46, 0xe6b526, 0x8c8072] },
-  camphor: { tex: 'broad', c: 0x3f7f4a, t: 'l', side: 2, snow: .75, sway: 1, season: [0x548c4b, 0x2f6638, 0x3d6b3b, 0x416650] },
+  camphor: { tex: 'broad', c: 0x3f7f4a, t: 'l', side: 2, snow: .55, sway: 1, season: [0x548c4b, 0x2f6638, 0x3d6b3b, 0x416650] },
   plum:    { tex: 'blossom', c: 0x5d9c52, t: 'l', side: 2, snow: .2, sway: 1, leaf: [1, 1, .9, .42], season: [0x74a658, 0x478346, 0x967e3c, 0xe0567c] },
   shrub:   { tex: 'shrub', c: 0x4c8a4c, t: 'l', side: 2, snow: .9, sway: 1, season: [0x548e4b, 0x366d3b, 0x52743c, 0x476a4f] },
   azalea:  { tex: 'shrub', c: 0xd9518c, t: 'l', side: 2, snow: .9, sway: 1, season: [0xea6fa6, 0x437c43, 0x5f7c3e, 0x4e6c52] },
@@ -76,7 +78,8 @@ const DETAIL = {
   bark: 'diffuseColor.rgb*=.76+.4*wn(vec2(q.x*16.,q.y*1.6));',
   lawn: 'float a=wn(vWp.xz*.06),b=wn(vWp.xz*.9),c=wn(vWp.xz*4.3+1.7);float fd=clamp(1.-.007/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.84+.3*a)*mix(1.,.88+.14*b+.12*c,fd);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.08,1.02,.8),smoothstep(.55,.8,wn(vWp.xz*.021+5.))*.35);',
   canopy: 'diffuseColor.rgb*=.7+.62*wn(vWp.xy*.55)*wn(vWp.zy*.6+3.7);',
-  hill: 'float a=wn(vWp.xz*.009),b=wn(vWp.xz*.07),c=wn(vWp.xz*.13),e=wn(vWp.xz*.47+3.1);float fd=clamp(1.-.0016/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.9+.1*a+.1*b*fd)*mix(1.,.76+.28*c+.24*e,fd);'
+  brick: 'float fd=clamp(1.-.004/gl_FragCoord.w,0.,1.),row=floor(q.y*4.5),cx=q.x*2.2+mod(row,2.)*.5,mt=smoothstep(0.,.07,fract(cx))*smoothstep(0.,.13,fract(q.y*4.5));diffuseColor.rgb*=(.82+.3*wn(q*1.9))*mix(1.,mix(.66,1.,mt)*(.9+.2*fract(sin(row*12.9+floor(cx)*78.2)*43758.5)),fd);',
+  hill: 'float a=wn(vWp.xz*.009),b=wn(vWp.xz*.07),c=wn(vWp.xz*.13),e=wn(vWp.xz*.47+3.1);float fd=clamp(1.-.0016/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.9+.1*a+.1*b*fd)*mix(1.,.56+.5*c+.4*e,fd);'
 };
 function patchMat(m, d) {
   const dt = d.dt && DETAIL[d.dt], bump = dt && d.t === 'p' && d.bump;

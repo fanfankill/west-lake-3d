@@ -207,16 +207,38 @@ function walkAt(t) {
 function startWalk() { cycle(false); if (lap.on) stopLap(); setFocus(null); walk.on = true; walk.t = 0; $('#a-walk').setAttribute('aria-pressed', true); $('#a-walk').textContent = '结束漫步'; $('#card').hidden = false; showCard('湖畔漫步', '从午后走到入夜', '镜头贴着湖面靠岸，踏上九曲桥，一折一景走进亭中；日头西沉，灯一盏盏亮起来，最后回望水里的亭影。拖动画面可随时接管视角。', [['结束漫步', stopWalk]]); markSel(null); }
 function stopWalk() { if (!walk.on) return; walk.on = false; $('#a-walk').setAttribute('aria-pressed', false); $('#a-walk').textContent = '湖畔漫步'; if (CAM.free) { const o = poseToOrbit(walk.p.toArray(), walk.l.toArray()); CAM.free = null; Object.assign(CAM.d, { th: o.th, ph: o.ph, r: o.r }); CAM.d.t.copy(o.t); CAM.t.copy(o.t); CAM.th = o.th; CAM.ph = o.ph; CAM.r = o.r; } setTod(ST.tod > .75 ? 1 : ST.tod > .3 ? .5 : 0); }
 // 环湖一周：沿湖心一侧的闭合航线匀速飞行，东岸起春、南岸入夏、西堤逢秋、北岸落雪，回到东岸又是一春
-const LAP = [[-75, 16, 10], [-62, 22, 150], [-110, 30, 310], [-225, 34, 400], [-390, 26, 360], [-480, 22, 200], [-500, 20, 0], [-492, 22, -200], [-460, 26, -400], [-385, 28, -470], [-225, 22, -496], [-85, 20, -545], [-28, 24, -380], [-58, 20, -160]];
-const lapCurve = new THREE.CatmullRomCurve3(LAP.map(p => new V3(p[0], p[1], p[2])), true, 'centripetal'), LAP_T = 180, _la = new V3();
-const SIGHTS = [['集贤亭 · 九曲桥', -36, -6], ['雷峰塔', -330, 560], ['净慈寺 · 南屏晚钟', -128, 560], ['小瀛洲 · 三潭印月', -215, 70], ['苏堤', -545, 250], ['苏堤', -575, -150], ['阮公墩', -410, -110], ['湖心亭', -300, -231], ['孤山', -360, -560], ['平湖秋月', -176, -548], ['白堤', -80, -600], ['断桥', 5, -638]];
-const lap = { on: false, t: 0, cap: '' };
-function lapAt(u) {
-  u = ((u % 1) + 1) % 1; lapCurve.getPointAt(u, walk.p); lapCurve.getPointAt((u + .05) % 1, _la);
-  const ox = _la.x + 280, oz = _la.z + 80, ol = Math.hypot(ox, oz) || 1; walk.l.set(_la.x + ox / ol * 42, 6, _la.z + oz / ol * 42);
-  CAM.free = { p: walk.p, l: walk.l }; CAM.fly = null; ST.season = TG.season = u * 4;
+// 环湖导览：路线贴近每一处景点，镜头提前转向它、同时浮出景名并放慢；经过之后放开镜头、景名隐去
+const LAP = [[-70, 9, 26], [-118, 12, 78], [-178, 5, 158], [-235, 7, 172], [-190, 12, 300], [-138, 12, 486], [-235, 30, 448], [-318, 64, 468], [-400, 40, 440], [-470, 14, 340],
+  [-505, 7, 215], [-512, 8, 90], [-522, 6, -8], [-480, 9, -70], [-440, 8, -150], [-365, 9, -190], [-345, 8, -275], [-380, 9, -400], [-385, 7, -470], [-300, 7, -478],
+  [-215, 6, -500], [-150, 6, -520], [-85, 7, -550], [-25, 8, -590], [0, 12, -540], [-30, 18, -400], [-60, 16, -230], [-78, 11, -90]];
+const lapCurve = new THREE.CatmullRomCurve3(LAP.map(p => new V3(p[0], p[1], p[2])), true, 'centripetal'), LAP_T = 270, LAP0 = .945, _la = new V3(), _lt = new V3(), _ls = new V3();
+// [景名, 注视点 x, y, z, 提前多少米开始看, 过了多少米放开]
+const TOUR = [['集贤亭 · 九曲桥', -30, 4, -5, 160, 10], ['小瀛洲 · 三潭印月', -212, 3, 116, 135, -22], ['净慈寺 · 南屏晚钟', -130, 9, 560, 175, 12], ['雷峰塔', -330, 76, 560, 150, 30],
+  ['苏堤 · 锁澜桥', -544, 4, 190, 150, 12], ['苏堤 · 望山桥', -563, 4, -30, 95, 8], ['阮公墩', -408, 4, -104, 80, 8], ['湖心亭', -300, 6, -231, 90, 10],
+  ['孤山', -360, 9, -524, 130, 6], ['平湖秋月', -178, 4, -550, 95, 4], ['白堤 · 断桥', -10, 4, -632, 120, -18]];
+const lap = { on: false, t: 0, cap: '', want: '', tab: null, sl: null };
+function lapSetup() {
+  const N = 1600, L = lapCurve.getLength(), P = [], w = new Float32Array(N), T = new Float32Array(N + 1); for (let i = 0; i < N; i++) P.push(lapCurve.getPointAt(i / N));
+  if (FARPOS.leifeng) TOUR[3][2] = FARPOS.leifeng[1] + 30;
+  TOUR.forEach(s => { let bd = 1e9, bi = 0; P.forEach((p, i) => { const d = Math.hypot(p.x - s[1], p.z - s[3]); if (d < bd) { bd = d; bi = i; } }); s.a = bi / N - s[4] / L; s.len = (s[4] + s[5]) / L; s.r = Math.min(85 / L, s.len * .45); s.dmin = bd; s.uc = bi / N; });
+  for (let i = 0; i < N; i++) { let sw = 0; for (const s of TOUR) sw += lapW(s, i / N); w[i] = Math.min(1, sw); }
+  for (let i = 0; i < N; i++) T[i + 1] = T[i] + 1 / (1 - .5 * w[i]);          // 对着景点的路段只走一半速度
+  lap.tab = { N, T, L };
 }
-function startLap() { if (music.pref !== false) setMusic(true); cycle(false); if (walk.on) stopWalk(); setFocus(null); lap.on = true; $('#a-lap').setAttribute('aria-pressed', true); $('#a-lap').textContent = '结束环湖'; markSel(null); $('#card').hidden = true; }
+function lapW(s, u) { const du = (((u - s.a) % 1) + 1) % 1; return du >= s.len ? 0 : sstep(0, s.r, du) * (1 - sstep(s.len - s.r, s.len, du)); }
+// 时间进度 τ（0–1）换算成路程进度 u
+function lapU(tau) { if (!lap.tab) lapSetup(); const { N, T } = lap.tab, x = ((tau % 1) + 1) % 1 * T[N]; let lo = 0, hi = N; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (T[m] <= x) lo = m; else hi = m; } return (lo + (x - T[lo]) / (T[lo + 1] - T[lo])) / N; }
+function lapAt(tau) {
+  const u = lapU(tau); lapCurve.getPointAt(u, walk.p); lapCurve.getPointAt((u + .03) % 1, _la);
+  const ox = _la.x + 280, oz = _la.z + 80, ol = Math.hypot(ox, oz) || 1; walk.l.set(_la.x + ox / ol * 22, Math.max(5, _la.y - 6), _la.z + oz / ol * 22);
+  // 按方位角、俯仰角混合（而不是在两个注视点之间连直线），景点转到身后时镜头也不会突然甩头
+  const dx = walk.l.x - walk.p.x, dy = walk.l.y - walk.p.y, dz = walk.l.z - walk.p.z, d0 = Math.hypot(dx, dy, dz), yaw0 = Math.atan2(dz, dx), pit0 = Math.atan2(dy, Math.hypot(dx, dz)); let sw = 0, bw = 0, best = '', dyaw = 0, dpit = 0;
+  for (const s of TOUR) { const w = lapW(s, u); if (w <= 0) continue; const sx = s[1] - walk.p.x, sy = s[2] - walk.p.y, sz = s[3] - walk.p.z; dyaw += w * ((((Math.atan2(sz, sx) - yaw0) % TAU) + TAU + PI) % TAU - PI); dpit += w * (Math.atan2(sy, Math.hypot(sx, sz)) - pit0); sw += w; if (w > bw) { bw = w; best = s[0]; } }
+  if (sw > 0) { const k = .95 / Math.max(1, sw), yaw = yaw0 + dyaw * k, pit = pit0 + dpit * k; walk.l.set(walk.p.x + Math.cos(pit) * Math.cos(yaw) * d0, walk.p.y + Math.sin(pit) * d0, walk.p.z + Math.cos(pit) * Math.sin(yaw) * d0); }
+  lap.want = bw > .3 ? best : '';
+  CAM.free = { p: walk.p, l: walk.l }; CAM.fly = null; ST.season = TG.season = ((((tau - LAP0) % 1) + 1) % 1) * 4;   // 从集贤亭前出发，四季从春天数起
+}
+function startLap() { lap.sl = null; lap.t = 0; if (music.pref !== false) setMusic(true); cycle(false); if (walk.on) stopWalk(); setFocus(null); lap.on = true; $('#a-lap').setAttribute('aria-pressed', true); $('#a-lap').textContent = '结束环湖'; markSel(null); $('#card').hidden = true; }
 function stopLap() { if (!lap.on) return; lap.on = false; $('#a-lap').setAttribute('aria-pressed', false); $('#a-lap').textContent = '环湖一周'; $('#cap').style.opacity = 0; lap.cap = '';
   if (CAM.free) { const o = poseToOrbit(walk.p.toArray(), walk.l.toArray()); CAM.free = null; Object.assign(CAM.d, { th: o.th, ph: o.ph, r: o.r }); CAM.d.t.copy(o.t); CAM.t.copy(o.t); CAM.th = o.th; CAM.ph = o.ph; CAM.r = o.r; }
   const k = ((Math.round(ST.season) % 4) + 4) % 4; ST.season = ((ST.season % 4) + 4) % 4; TG.season = ST.season; setSeason(k); }
@@ -251,7 +273,8 @@ WL.onTap = (cx, cy) => { const p = pickWater(cx, cy); if (!p) return; addRipple(
 WL.onUserMove = () => { if (walk.on) stopWalk(); if (lap.on) stopLap(); };
 WL.tick = (dt, t) => {
   if (walk.on) { walk.t += dt * .62; walkAt(walk.t); if (walk.t >= WALK_T) { stopWalk(); selectView('ting'); setTod(1); } if (Math.floor(walk.t * 1.3) !== Math.floor((walk.t - dt * .62) * 1.3) && walk.t > 8.6 && walk.t < 23) { /* 脚边的水纹 */ addRipple(walk.p.x + rr(-3, 3), walk.p.z + rr(-3, 3), .35); } }
-  if (lap.on) { lap.t += dt; lapAt(lap.t / LAP_T); let best = '', bd = 230; for (const s of SIGHTS) { const d = Math.hypot(s[1] - walk.p.x, s[2] - walk.p.z); if (d < bd) { bd = d; best = s[0]; } }
+  if (lap.on) { lap.t += dt; lapAt(LAP0 + lap.t / LAP_T); if (lap.sl) walk.l.copy(lap.sl.lerp(walk.l, 1 - Math.exp(-dt * 2.4))); else lap.sl = walk.l.clone(); const best = lap.want;   // 注视点再过一道缓动
+   
     if (best !== lap.cap) { lap.cap = best; const c = $('#cap'); c.style.opacity = 0; clearTimeout(lap.ct); if (best) lap.ct = setTimeout(() => { c.textContent = best; c.style.opacity = 1; }, 600); } }
   if (cyc.on) { if (!CAM.fly && !CAM.free && !walk.on) CAM.d.th += dt * .1; cyc.t += dt; if (cyc.t > 4.6 && ST.season === TG.season) { cyc.t = 0; setSeason((curSeason() + 1) % 4); } }
   if (ST.rain > .5 && Math.random() < dt * 2.5) { camera.getWorldDirection(_fw); addRipple(camera.position.x + _fw.x * 14 + rr(-10, 10), camera.position.z + _fw.z * 14 + rr(-10, 10), .3); }
@@ -300,8 +323,8 @@ function init() {
   frame(.016); $('#veil').classList.add('off'); WL.ready = true; requestAnimationFrame(loop);
 }
 requestAnimationFrame(() => setTimeout(() => { try { init(); } catch (e) { console.error(e); $('#veil').textContent = '场景加载失败：' + e.message; } }, 30));
-WL.api = { lapAt, startLap, setImmersive, setMusic, music, selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
+WL.api = { lapAt, lap, TOUR, lapU, LAP_T, LAP0, startLap, setImmersive, setMusic, music, selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
 WL.sync = () => { const gl = renderer.getContext(), px = new Uint8Array(4); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); return px[0]; };
 WL.info = () => ({ tris: renderer.info.render.triangles, calls: renderer.info.render.calls, meshes: MESHES.length, mats: MATS.length });
 WL.r = renderer; WL.water = water;
-WL.dbg = { MESHES, MATS, PARTS, sun, scene, sky, FL, lanterns, rip, koi };
+WL.dbg = { MESHES, MATS, PARTS, sun, scene, sky, FL, lanterns, rip, koi, FARPOS };
