@@ -23,7 +23,8 @@
 }
 html,body{height:100%}
 body{background:var(--paper);color:var(--ink);font-family:var(--serif);font-size:14px;line-height:1.6;overflow:hidden;-webkit-font-smoothing:antialiased}
-#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;filter:contrast(1.05) saturate(1.04)}
+body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 85% 80% at 50% 46%,transparent 58%,rgba(8,18,28,.2) 100%)}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .panel{position:fixed;z-index:2;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px) saturate(1.1);-webkit-backdrop-filter:blur(14px) saturate(1.1);transition:background .8s,color .8s,border-color .8s}
@@ -81,6 +82,11 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
 #veil{position:fixed;inset:0;background:var(--paper);display:grid;place-items:center;font-family:var(--brush);font-size:26px;letter-spacing:.3em;color:var(--ink2);transition:opacity .9s;z-index:9}
 #veil.off{opacity:0;pointer-events:none}
 #mbar{display:none}
+#cap{position:fixed;left:0;right:0;bottom:calc(9% + env(safe-area-inset-bottom,0px));text-align:center;font-family:var(--brush);font-size:clamp(22px,3.4vh,40px);letter-spacing:.28em;color:#f6f3e8;text-shadow:0 1px 14px rgba(0,25,30,.75),0 0 3px rgba(0,25,30,.6);opacity:0;transition:opacity .6s;pointer-events:none;z-index:1}
+#imm-exit{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));z-index:4;font-family:var(--serif);font-size:13px;letter-spacing:.2em;color:var(--ink);background:var(--glass);border:1px solid var(--line);border-radius:3px;padding:7px 12px;opacity:0;pointer-events:none;transition:opacity .5s}
+body.immersive #imm-exit.show{opacity:.92;pointer-events:auto}
+body.immersive .panel,body.immersive #brand,body.immersive #labels,body.immersive #poem{opacity:0!important;pointer-events:none!important}
+.panel,#brand,#labels,#poem{transition:opacity .6s,background .8s,color .8s,border-color .8s}
 #film{position:fixed;inset:0;pointer-events:none;display:none;color:#f6f3e8}
 #film .t1{position:absolute;left:76%;top:9%;writing-mode:vertical-rl;font-family:var(--brush);font-size:14vh;line-height:1;letter-spacing:.06em;color:#17231f;text-shadow:0 0 2.4vh rgba(240,246,244,.9),0 0 .6vh rgba(240,246,244,.8)}
 #film .t2{position:absolute;left:calc(76% + 16.5vh);top:11%;writing-mode:vertical-rl;font-size:2.6vh;letter-spacing:.5em;color:#17231f;text-shadow:0 0 1.2vh rgba(240,246,244,.95)}
@@ -138,12 +144,14 @@ body.film #film{display:block}
   </div>
   <div class="row"><div class="lab">体验</div>
     <div class="acts">
+      <button class="act" id="a-lap" aria-pressed="false">环湖一周</button>
       <button class="act" id="a-walk" aria-pressed="false">湖畔漫步</button>
       <button class="act" id="a-cycle" aria-pressed="false">四季流转</button>
       <button class="act" id="a-bell">听南屏晚钟</button>
+      <button class="act" id="a-imm" aria-pressed="false">沉浸模式</button>
       <button class="act" id="a-reset">回到全景</button>
     </div>
-    <p class="tip">点一下湖面，涟漪荡开，桥边的锦鲤会循着游来；入夜后再点，可放一盏荷灯。</p>
+    <p class="tip">环湖一周约三分钟，沿途四季流转。沉浸模式隐藏全部界面，按 H 或 Esc 恢复。点湖面起涟漪，入夜可放荷灯。</p>
   </div>
   <div class="row"><label for="op">整体透明度<b id="op-v" style="letter-spacing:.05em;font-variant-numeric:tabular-nums">100%</b></label>
     <input type="range" id="op" min="8" max="100" value="100">
@@ -159,6 +167,8 @@ body.film #film{display:block}
   <div class="body"><div class="tag" id="c-tag"></div><p id="c-text"></p><div class="btns" id="c-btns"></div></div>
 </section>
 
+<div id="cap" aria-live="polite"></div>
+<button id="imm-exit">显示界面</button>
 <nav id="mbar" class="panel"><button data-sheet="explore" aria-pressed="false">探索</button><button data-sheet="dock" aria-pressed="false">时令</button></nav>
 <div id="film"><div class="t1"></div><div class="t2"></div><div class="s1"></div><div class="sn"></div><div class="sd"></div><div class="e1"></div><div class="e2"></div><div class="fade"></div></div>
 <div id="veil">研墨铺纸…</div>
@@ -167,7 +177,7 @@ body.film #film{display:block}
 (() => {
 "use strict";
 // ───────── 01 core：工具、材质、合并构建器 ─────────
-const WL = window.WL = { time: 0, film: /film/.test(location.hash) };
+const WL = window.WL = { time: 0, film: /film/.test(location.hash), nightHooks: [] };
 const { Vector3: V3, Color, Matrix4, Quaternion, Euler } = THREE;
 const TAU = Math.PI * 2, PI = Math.PI;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -205,12 +215,12 @@ const MD = {
   canvasW: { c: 0xe8e4d8, t: 'p', snow: .9 },
   bark:    { dt: 'bark', c: 0x5a4636, t: 'l', snow: .8, jit: .12 },
   bed:     { c: 0x5d6048, t: 'l', snow: 0 },
-  lawn:    { dt: 'lawn', c: 0x7fa85e, t: 'l', snow: .96, season: [0x84ad60, 0x5e9449, 0x9a9c58, 0xa8ae98] },
+  lawn:    { dt: 'lawn', c: 0x7fa85e, t: 'l', snow: .96, season: [0x7fa664, 0x5e9449, 0x9a9c58, 0xa8ae98] },
   paving:  { c: 0xc4bfb1, t: 'l', snow: .85 },
-  farLand: { dt: 'hill', c: 0x7fae68, t: 'l', snow: .95, season: [0x8dbd72, 0x5f9a56, 0xa39a58, 0xaab3a6] },
-  hill1:   { dt: 'hill', c: 0x5f9a62, t: 'l', snow: .9, season: [0x6faa6c, 0x3f7f4d, 0x93834a, 0x8b9a94] },
-  hill2:   { dt: 'hill', c: 0x6fa27a, t: 'l', snow: .9, season: [0x80b088, 0x4d8a66, 0x97906a, 0x9aa8a6] },
-  hill3:   { dt: 'hill', c: 0x86ad9a, t: 'l', snow: .9, season: [0x97bba6, 0x6a9c8a, 0xa39f8c, 0xaab7b8] },
+  farLand: { dt: 'lawn', c: 0x7fae68, t: 'l', snow: .95, season: [0x7c9f62, 0x5a8a4c, 0x94935a, 0xa6ac98] },
+  hill1:   { dt: 'hill', c: 0x5f9a62, t: 'l', snow: .9, season: [0x5f9358, 0x3f7748, 0x8a7c48, 0x86948c] },
+  hill2:   { dt: 'hill', c: 0x6fa27a, t: 'l', snow: .9, season: [0x6c9a74, 0x4a7f5e, 0x8c8862, 0x94a29e] },
+  hill3:   { dt: 'hill', c: 0x86ad9a, t: 'l', snow: .9, season: [0x8aaa9c, 0x6a9684, 0x9c9a88, 0xa6b2b2] },
   pagoda:  { c: 0x6d4a34, t: 'l', snow: .5, glow: 0xffb04a, gi: .95 },
   brick:   { c: 0x94897a, t: 'l', snow: .5, glow: 0xffe2b0, gi: .5 },
   willow:  { tex: 'willow', c: 0x8cc05c, t: 'l', snow: .35, sway: 1, side: 2, season: [0xa5c95a, 0x55913f, 0xa39c44, 0xa5966c] },
@@ -229,6 +239,7 @@ const MD = {
   lotusFl: { c: 0xf3a6c0, t: 'l', snow: 0, side: 2 },
   koi:     { c: 0xffffff, t: 'b', snow: 0 },
 };
+function freeArr() { this.array = null; }
 const MATS = [];       // 所有实例化的材质（统一更新季节/夜色/透明度）
 const MESHES = [];     // {mesh, part, matId}
 const PARTS = {};      // part id → {meshes:[], visible}
@@ -241,9 +252,9 @@ const DETAIL = {
   plaster: 'float a=wn(vec2(q.x*3.,q.y*.4)),b=a,c=wn(q*9.);wlH=c;diffuseColor.rgb*=(.92+.08*a)*(.96+.06*c);diffuseColor.rgb*=mix(vec3(.74,.78,.74),vec3(1.),smoothstep(.55,1.5,vWp.y+b*.5));',
   rock: 'float a=wn(q*1.3),b=wn(q*9.);diffuseColor.rgb*=(.7+.4*a)*(.82+.3*b);',
   bark: 'diffuseColor.rgb*=.76+.4*wn(vec2(q.x*16.,q.y*1.6));',
-  lawn: 'float a=wn(vWp.xz*.06);diffuseColor.rgb*=.84+.3*a;',
+  lawn: 'float a=wn(vWp.xz*.06),b=wn(vWp.xz*.9),c=wn(vWp.xz*4.3+1.7);float fd=clamp(1.-.007/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.84+.3*a)*mix(1.,.88+.14*b+.12*c,fd);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.08,1.02,.8),smoothstep(.55,.8,wn(vWp.xz*.021+5.))*.35);',
   canopy: 'diffuseColor.rgb*=.7+.62*wn(vWp.xy*.55)*wn(vWp.zy*.6+3.7);',
-  hill: 'float a=wn(vWp.xz*.009),b=wn(vWp.xz*.07);diffuseColor.rgb*=.76+.26*a+.2*b;'
+  hill: 'float a=wn(vWp.xz*.009),b=wn(vWp.xz*.07),c=wn(vWp.xz*.13),e=wn(vWp.xz*.47+3.1);float fd=clamp(1.-.0016/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.9+.1*a+.1*b*fd)*mix(1.,.76+.28*c+.24*e,fd);'
 };
 function patchMat(m, d) {
   const dt = d.dt && DETAIL[d.dt], bump = dt && d.t === 'p' && d.bump;
@@ -256,10 +267,11 @@ function patchMat(m, d) {
       .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + (d.sway ? 'transformed=aSw.xyz+(transformed-aSw.xyz)*uLeaf;float ph=uTime*1.25+aSw.x*.31+aSw.z*.27;transformed.x+=sin(ph)*aSw.w*.34*uWind;transformed.z+=cos(ph*.83+1.3)*aSw.w*.26*uWind;' : '') + 'vWp=(modelMatrix*vec4(transformed,1.)).xyz;');
     let fs = 'varying float vSnow;varying vec3 vWp,vWn;\nuniform sampler2D uNz;\nfloat wn(vec2 p){return clamp((texture2D(uNz,p*.1667).r-.5)*2.1+.5,0.,1.);}\n' + sh.fragmentShader
       .replace('#include <color_fragment>', '#include <color_fragment>\nfloat wlH=0.;' + (dt ? '{vec3 an=abs(vWn);vec2 q=an.y>.55?vWp.xz:(an.x>an.z?vWp.zy:vWp.xy);' + dt + '}' : '') + '\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(.93,.95,.97),vSnow);');
+    if (d.tex) fs = fs.replace('reflectedLight.directDiffuse = ( gl_FrontFacing ) ? vLightFront : vLightBack;', 'reflectedLight.directDiffuse = max(vLightFront,vLightBack)*.74+min(vLightFront,vLightBack)*.26;');
     if (bump) fs = fs.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n{vec3 wsx=dFdx(vViewPosition),wsy=dFdy(vViewPosition);float whx=dFdx(wlH),why=dFdy(wlH);vec3 wr1=cross(wsy,normal),wr2=cross(normal,wsx);float wdet=dot(wsx,wr1);normal=normalize(abs(wdet)*normal-' + d.bump.toFixed(4) + '*(1.-vSnow)*sign(wdet)*(whx*wr1+why*wr2));}');
     sh.fragmentShader = fs;
   };
-  m.customProgramCacheKey = () => [d.dt || '', d.bump || 0, d.sway || 0, d.t].join('|');
+  m.customProgramCacheKey = () => [d.dt || '', d.bump || 0, d.sway || 0, d.t, d.tex ? 1 : 0].join('|');
 }
 // 叶片贴图：画布上画出一簇叶形（带透明），按季节色相乘
 const LEAFTEX = {};
@@ -350,7 +362,7 @@ class Builder {
       const mesh = new THREE.Mesh(g, makeMat(k.mat, null, k.tex));
       if (k.tex) { g.setAttribute('uv', new THREE.Float32BufferAttribute(k.uv, 2)); mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: mesh.material.map, alphaTest: .28, side: THREE.DoubleSide }); }
       mesh.castShadow = o.cast !== false; mesh.receiveShadow = o.receive !== false;
-      if (!o.local) g.computeBoundingSphere();
+      g.computeBoundingSphere(); for (const n in g.attributes) g.attributes[n].onUpload(freeArr);   // 上传显卡后释放内存里的副本
       regMesh(mesh, k.part, k.mat); root.add(mesh); out.push(mesh);
     }
     this.b.clear(); return out;
@@ -423,7 +435,7 @@ const waterN = (() => {
 })();
 
 // 倒影
-const reflRT = new THREE.WebGLRenderTarget(512, 512, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+const reflRT = new THREE.WebGLRenderTarget(WL.film ? 512 : 1024, WL.film ? 512 : 1024, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
 const reflCam = new THREE.PerspectiveCamera();
 const texMat = new Matrix4();
 const NR = 8, rip = []; for (let i = 0; i < NR; i++) rip.push(new THREE.Vector4(0, 0, -99, 0));
@@ -456,7 +468,8 @@ vec2 o=f-(vec2(h21(id+3.1),h21(id+7.7))-.5)*.5;float d=length(o);float ring=sin(
 vec3 N=normalize(vec3(g.x,1.,g.y));
 float ndv=max(dot(N,V),0.);float fr=mix(.14,1.,pow(1.-ndv,3.2));
 vec2 ruv=vM.xy/vM.w+vec2(gd.x*.04,gd.y*.075)/(1.+dist*.012);
-vec3 refl=texture2D(tR,clamp(ruv,.001,.999)).rgb;
+vec2 rst=vec2(0.,.011*rough)/(1.+dist*.01);ruv=clamp(ruv,.002,.998);
+vec3 refl=texture2D(tR,ruv).rgb*.46+texture2D(tR,clamp(ruv+rst,.002,.998)).rgb*.27+texture2D(tR,clamp(ruv-rst,.002,.998)).rgb*.27;
 vec3 body=uDeep*(.85+.3*pch)+uSky*.1;
 vec3 col=mix(body,refl,fr);
 vec3 R=reflect(-V,N);float rl=max(dot(R,uLight),0.);
@@ -567,20 +580,23 @@ function stations(a, b, step) { const l = Math.hypot(b[0] - a[0], b[1] - a[1]), 
 function roofPt(o, k, u, t) {
   const au = Math.abs(u), c3 = t * t * t, f = (o.flare || 0) * au * au * c3;
   let ap, hw, a;
-  if (o.rect) { const X = lerp(o.x0, o.x1, t), Z = lerp(o.z0, o.z1, t); a = k * PI / 2; if (k % 2 === 0) { ap = Z + f; hw = X + f; } else { ap = X + f; hw = Z + f; } }
+  if (o.rect) { const X = lerp(o.x0, o.x1, t), Z = lerp(o.z0, o.z1, t); a = k * PI / 2 + (o.rot || 0); if (k % 2 === 0) { ap = Z + f; hw = X + f; } else { ap = X + f; hw = Z + f; } }
   else { const r = lerp(o.rTop, o.rEave, t) + f; a = k * TAU / o.sides + (o.rot || 0); ap = r; hw = r * Math.tan(PI / o.sides); }
   const nx = Math.sin(a), nz = Math.cos(a), ex = Math.cos(a), ez = -Math.sin(a);
   const y = o.h * (1 - t) - Math.sin(PI * t) * o.sag * o.h + o.lift * Math.pow(au, 2.4) * c3;
   return [o.cx + nx * ap + ex * hw * u, o.cy + y, o.cz + nz * ap + ez * hw * u];
 }
 function buildRoof(pTile, pRidge, o, q = {}) {
-  const N = o.rect ? 4 : o.sides, nu = q.nu || 12, nt = q.nt || 10, sp = q.sp || 0.27;
+  const Bq = q.B || B, N = o.rect ? 4 : o.sides, nu = q.nu || 12, nt = q.nt || 10, sp = q.sp || 0.27;
   for (let k = 0; k < N; k++) {
     const pos = [], pos2 = [], idx = [], idx2 = [];
     for (let i = 0; i <= nt; i++) for (let j = 0; j <= nu; j++) { const p = roofPt(o, k, j / nu * 2 - 1, i / nt); pos.push(p[0], p[1], p[2]); pos2.push(p[0], p[1] - 0.1, p[2]); }
     for (let i = 0; i < nt; i++) for (let j = 0; j < nu; j++) { const a = i * (nu + 1) + j, b = a + 1, c = a + nu + 1, d = c + 1; idx.push(a, b, c, b, d, c); idx2.push(a, c, b, b, c, d); }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); B.add(pTile, 'tile', g, null, .86);
-    const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g2.setIndex(idx2); g2.computeVertexNormals(); B.add(pTile, 'woodDk', g2, null, 1);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); Bq.add(pTile, 'tile', g, null, .86);
+    const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g2.setIndex(idx2); g2.computeVertexNormals(); Bq.add(pTile, 'woodDk', g2, null, 1);
+    // 瓦面与望板各补一份反向的面：无论从哪一侧看，朝上的总是瓦、朝下的总是木
+    const g3 = new THREE.BufferGeometry(); g3.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g3.setIndex(idx2); g3.computeVertexNormals(); Bq.add(pTile, 'tile', g3, null, .86);
+    const g4 = new THREE.BufferGeometry(); g4.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g4.setIndex(idx); g4.computeVertexNormals(); Bq.add(pTile, 'woodDk', g4, null, 1);
     // 瓦垄
     const e0 = roofPt(o, k, -1, 1), e1 = roofPt(o, k, 1, 1), wE = Math.hypot(e1[0] - e0[0], e1[2] - e0[2]) / 2, nr = Math.floor(wE * 2 / sp);
     for (let r = 0; r < nr; r++) {
@@ -589,19 +605,19 @@ function buildRoof(pTile, pRidge, o, q = {}) {
         const t = i / nt, a0 = roofPt(o, k, -1, t), a1 = roofPt(o, k, 1, t), w = Math.hypot(a1[0] - a0[0], a1[2] - a0[2]) / 2, u = w > 1e-3 ? s / w : 9;
         if (Math.abs(u) > 0.97) { if (prev && i < nt) { // 收到戗脊
             const t2 = (i + 1) / nt; let lo = t, hi = t2; for (let b = 0; b < 6; b++) { const m = (lo + hi) / 2, c0 = roofPt(o, k, -1, m), c1 = roofPt(o, k, 1, m); if (Math.abs(s) / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2) > .97) lo = m; else hi = m; }
-            const c0 = roofPt(o, k, -1, hi), c1 = roofPt(o, k, 1, hi), p = roofPt(o, k, s / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2), hi); p[1] += .045; B.seg(pTile, 'tile', prev, p, .12, .08);
+            const c0 = roofPt(o, k, -1, hi), c1 = roofPt(o, k, 1, hi), p = roofPt(o, k, s / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2), hi); p[1] += .045; Bq.seg(pTile, 'tile', prev, p, .12, .08);
           } break; }
-        const p = roofPt(o, k, u, t); p[1] += .045; if (prev) B.seg(pTile, 'tile', prev, p, .12, .08); prev = p;
+        const p = roofPt(o, k, u, t); p[1] += .045; if (prev) Bq.seg(pTile, 'tile', prev, p, .12, .08); prev = p;
       }
     }
     // 戗脊 + 翼角
     let prev = null; const nh = 14;
-    for (let i = 0; i <= nh; i++) { const p = roofPt(o, k, 1, i / nh); p[1] += .1; if (prev) B.seg(pRidge, 'ridge', prev, p, .2, .22, .95); prev = p; }
+    for (let i = 0; i <= nh; i++) { const p = roofPt(o, k, 1, i / nh); p[1] += .1; if (prev) Bq.seg(pRidge, 'ridge', prev, p, .2, .22, .95); prev = p; }
     const pa = roofPt(o, k, 1, 1), pb = roofPt(o, k, 1, .86); let dx = pa[0] - pb[0], dz = pa[2] - pb[2]; const dl = Math.hypot(dx, dz); dx /= dl; dz /= dl;
     const t1 = [pa[0] + dx * .32, pa[1] + .26, pa[2] + dz * .32], t2 = [pa[0] + dx * .5, pa[1] + .62, pa[2] + dz * .5];
-    B.seg(pRidge, 'ridge', [pa[0], pa[1] + .1, pa[2]], t1, .16, .18, .95); B.seg(pRidge, 'ridge', t1, t2, .11, .12, .95);
+    Bq.seg(pRidge, 'ridge', [pa[0], pa[1] + .1, pa[2]], t1, .16, .18, .95); Bq.seg(pRidge, 'ridge', t1, t2, .11, .12, .95);
     // 檐口
-    for (let j = 0; j < nu; j++) { const a = roofPt(o, k, j / nu * 2 - 1, 1), b = roofPt(o, k, (j + 1) / nu * 2 - 1, 1); a[1] -= .03; b[1] -= .03; B.seg(pTile, 'ridge', a, b, .09, .13, 1); }
+    for (let j = 0; j < nu; j++) { const a = roofPt(o, k, j / nu * 2 - 1, 1), b = roofPt(o, k, (j + 1) / nu * 2 - 1, 1); a[1] -= .03; b[1] -= .03; Bq.seg(pTile, 'ridge', a, b, .09, .13, 1); }
   }
 }
 // 挂落：枋下的木格花饰
@@ -625,7 +641,7 @@ function meiRenKao(part, a, b, y, ox, oz) {
 }
 // 石栏：望柱 + 栏板
 function stoneRail(part, line, yOf, step = 1.7) {
-  const post = (p) => { const y = yOf(p); B.box(part, 'stone', p[0], y + .43, p[1], .17, .86, .17); B.box(part, 'stone', p[0], y + .9, p[1], .2, .05, .2, 0, .93); B.add(part, 'stone', new THREE.SphereGeometry(.085, 8, 6), TM(p[0], y + .99, p[1], 0, 1, 1.3, 1), 1.02); };
+  const post = (p) => { const y = yOf(p); B.box(part, 'stone', p[0], y + .43, p[1], .17, .86, .17); B.box(part, 'stone', p[0], y + .9, p[1], .2, .05, .2, 0, .93); B.add(part, 'stone', new THREE.SphereGeometry(.085, 7, 4), TM(p[0], y + .99, p[1], 0, 1, 1.3, 1), 1.02); };
   for (let i = 0; i < line.length - 1; i++) {
     const st = stations(line[i], line[i + 1], step);
     st.forEach((p, j) => { if (j > 0 || i === 0) post(p); if (j < st.length - 1) { const q = st[j + 1], y0 = yOf(p), y1 = yOf(q);
@@ -638,6 +654,8 @@ function lathe(pts, seg) {
   if (N.getX(bi) * P.getX(bi) + N.getZ(bi) * P.getZ(bi) < 0) { const ix = g.index.array; for (let i = 0; i < ix.length; i += 3) { const t = ix[i]; ix[i] = ix[i + 1]; ix[i + 1] = t; } g.computeVertexNormals(); }
   return g;
 }
+// 路灯：石础、铁杆、方灯罩，入夜自亮
+function lampPost(part, x, y, z) { B.box(part, 'stone', x, y + .12, z, .4, .24, .4); B.add(part, 'metal', new THREE.CylinderGeometry(.05, .07, 3.2, 8), TM(x, y + 1.8, z)); B.box(part, 'lampGl', x, y + 3.66, z, .34, .46, .34, 0, 1); [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(d => B.box(part, 'metal', x + d[0] * .175, y + 3.66, z + d[1] * .175, .035, .5, .035)); B.box(part, 'metal', x, y + 3.41, z, .4, .04, .4); B.add(part, 'metal', new THREE.ConeGeometry(.36, .22, 4), TM(x, y + 4.0, z, PI / 4)); addGlow(x, y + 3.66, z, 0xffc888, 8); }
 function column(part, x, z, y0, y1, r = .15) {
   B.add(part, 'wood', new THREE.CylinderGeometry(r * .92, r, y1 - y0, 12), TM(x, (y0 + y1) / 2, z));
   B.add(part, 'stone', lathe([[r * 1.25, 0], [r * 1.75, .05], [r * 1.85, .12], [r * 1.5, .2], [r * 1.1, .22], [0, .22]], 12), TM(x, y0 - .02, z));
@@ -671,7 +689,7 @@ function buildShore() {
   { const fg = new THREE.PlaneGeometry(2600, 2400, 8, 8).rotateX(-PI / 2); fg.translate(2055, Y0 - .03, -175); B.add('lawn', 'farLand', fg, null, 1); }   // 远处的平地另用一块粗网格，免得近处草地跟着一个几公里的大三角形
   [extN.concat([bank[0]]), [bank[bank.length - 1]].concat(extS)].forEach(ln => { for (let i = 0; i < ln.length - 1; i++) { const a = ln[i], b = ln[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
     B.seg('bank', 'stone', [a[0], -.5, a[1]], [b[0], -.5, b[1]], .8, 2, .85);
-    for (let s = 6; s < l; s += 9) { const x = lerp(a[0], b[0], s / l), z = lerp(a[1], b[1], s / l); if (Math.abs(z) < 330) { treeLite(['camphor', 'plane'][(s / 9 | 0) % 2], x + rr(5, 9), z, rr(.7, .9)); treeLite('camphor', x + rr(18, 34), z + rr(-4, 4), rr(.9, 1.2)); continue; } blob('trees', (s / 9 | 0) % 4 === 1 ? 'farPeach' : 'farTree', x + rr(4, 9), Y0 + rr(4, 6), z + rr(-2, 2), rr(4, 6), rr(4.5, 7), rr(4, 6), rr(.85, 1.1), 0, 1); if (s % 2 < 1) blob('trees', 'farTree', x + rr(16, 40), Y0 + rr(6, 9), z + rr(-4, 4), rr(7, 10), rr(7, 10), rr(7, 10), rr(.8, 1), 0, 1); } } });
+    for (let s = 6; s < l; s += 9) { const x = lerp(a[0], b[0], s / l), z = lerp(a[1], b[1], s / l); if (Math.abs(z) < 330) { treeLite(['camphor', 'plane'][(s / 9 | 0) % 2], x + rr(5, 9), z, rr(.7, .9)); treeLite('camphor', x + rr(18, 34), z + rr(-4, 4), rr(.9, 1.2)); continue; } if ((s / 9 | 0) % 4 === 1) tree('peach', x + rr(4, 8), z + rr(-2, 2), 'trees', 1.2); else treeFar('trees', ['camphor', 'plane', 'ginkgo'][(s / 9 | 0) % 3], x + rr(4, 9), Y0, z + rr(-2, 2), rr(.6, .85)); if (s % 2 < 1) treeFar('trees', 'camphor', x + rr(16, 40), Y0, z + rr(-4, 4), rr(.95, 1.25)); } } });
   const lawnTex = canvasTex(256, 256, (c, w) => { c.fillStyle = '#e9e9e9'; c.fillRect(0, 0, w, w); const r = mulberry(5); for (let i = 0; i < 9000; i++) { const v = 200 + r() * 55 | 0; c.fillStyle = `rgba(${v},${v},${v - 20},.5)`; c.fillRect(r() * w, r() * w, 1 + r() * 2, 2 + r() * 3); } }, true); lawnTex.repeat.set(.16, .16);
   const lg = new THREE.ShapeGeometry(sh); lg.rotateX(-PI / 2); lg.translate(0, Y0, 0);
   const lawn = new THREE.Mesh(lg, makeMat('lawn', { vertexColors: false, map: lawnTex })); lawn.receiveShadow = true; world.add(lawn); regMesh(lawn, 'lawn', 'lawn');
@@ -957,8 +975,38 @@ function willow(x, z, k = 1) {
   }
 }
 function shrub(kind, x, z, r, h) { const az = kind === 'azalea'; blob('shrubs', kind, x, Y0 + h * .5, z, r * .82, h * .5, r * .82, az ? rr(.8, .9) : rr(.62, .72), .05, 1, 99999); leaves('shrubs', kind, x, Y0 + h * .55, z, r, h * .62, r, 22, .3, rr(.9, 1.1), .08, 0, 99999, 0, 1, az ? .5 : 0); }
-function treeLite(kind, x, z, k) { const H = rr(11, 15) * k, R = rr(4.5, 6) * k, tint = rr(.85, 1.08); limb('trees', [x, Y0, z], [x, Y0 + H * .5, z], .32, .18);
-  for (let i = 0; i < 3; i++) { const ox = rr(-.35, .35) * R, oz = rr(-.35, .35) * R, cy = Y0 + H * (.55 + i * .13), r = R * (.78 - i * .14); blob('trees', kind, x + ox, cy, z + oz, r * .78, r * .68, r * .78, tint * .55, .15, 1, Y0 + H * .5); leaves('trees', kind, x + ox, cy + r * .1, z + oz, r, r * .8, r, 13, 1.7, tint, .3, x, Y0 + H * .5, z); } }
+function treeLite(kind, x, z, k, part = 'trees', y0 = Y0, cards = 13) { const H = rr(11, 15) * k, R = rr(4.5, 6) * k, tint = rr(.85, 1.08), top = [x + rr(-.4, .4), y0 + H * .5, z + rr(-.4, .4)]; limb(part, [x, y0 - .3, z], top, .2 + .14 * k, .1 + .09 * k);
+  for (let i = 0; i < 3; i++) { const a = i * 2.1 + rnd() * 1.2, ox = Math.cos(a) * R * .34, oz = Math.sin(a) * R * .34, cy = y0 + H * (.56 + i * .12), r = R * (.74 - i * .1);
+    limb(part, top, [x + ox, cy - r * .2, z + oz], .09 + .06 * k, .04);
+    blob(part, kind, x + ox, cy + r * .28, z + oz, r * .5, r * .4, r * .5, tint * .38, .15, 0, y0 + H * .5); leaves(part, kind, x + ox, cy + r * .1, z + oz, r, r * .78, r, cards + 5, 1.5 * Math.max(k, .7) + .5, tint * rr(.94, 1.06), .3, x, y0 + H * .5, z); }
+  leaves(part, kind, x, y0 + H * .86, z, R * .5, R * .34, R * .5, cards * .6 | 0, 1.2 * Math.max(k, .7) + .3, tint * 1.08, .34, x, y0 + H * .6, z); }
+// 远岸、山脚的树：树干、两团树冠、每团八片大叶面
+function treeFar(part, kind, x, y0, z, k = 1, crown = 0) { const H = rr(10, 15) * k, R = rr(4.6, 6.4) * k, tint = rr(.8, 1.08);
+  if (crown) { const r = R * 1.05; blob(part, kind, x, y0 + r * .55, z, r * .56, r * .42, r * .56, tint * .4, .1, 0, y0); leaves(part, kind, x, y0 + r * .42, z, r, r * .7, r, 15, 2.6 * k, tint, .25, x, y0, z); return; }
+  limb(part, [x, y0 - .6, z], [x, y0 + H * .55, z], .3 * k, .16 * k);
+  for (let i = 0; i < 2; i++) { const ox = rr(-.3, .3) * R, oz = rr(-.3, .3) * R, cy = y0 + H * (.58 + i * .2), r = R * (.8 - i * .2); blob(part, kind, x + ox, cy + r * .3, z + oz, r * .54, r * .42, r * .54, tint * .4, .1, 0, y0 + H * .5); leaves(part, kind, x + ox, cy + r * .1, z + oz, r, r * .8, r, 11, 2.4 * k, tint, .25, x, y0 + H * .5, z); } }
+// 堤岸上的柳：斜干、五条主枝、伞形冠与成帘的垂条
+function willowLite(part, x, z, k = 1, y0 = Y0) { const H = rr(6.8, 8.2) * k, lean = rr(-.9, .9), top = [x + lean, y0 + H * .5, z + rr(-.5, .5)], a0 = rnd() * TAU, tips = [];
+  limb(part, [x, y0 - .2, z], [x + lean * .4, y0 + H * .27, z], .27 * k, .2 * k); limb(part, [x + lean * .4, y0 + H * .27, z], top, .2 * k, .13 * k);
+  blob(part, 'willow', top[0], top[1] + H * .36, top[2], 1.3 * k, .7 * k, 1.3 * k, .4, .12, 0, top[1]);
+  for (let i = 0; i < 5; i++) { const a = a0 + i * TAU / 5 + rr(-.3, .3), o = rr(2.3, 3.3) * k, tip = [top[0] + Math.cos(a) * o, top[1] + H * rr(.3, .42), top[2] + Math.sin(a) * o]; limb(part, top, tip, .1 * k, .03); tips.push([tip, a]);
+    leaves(part, 'willow', lerp(top[0], tip[0], .7), tip[1] + .25, lerp(top[2], tip[2], .7), 1.7 * k, .7, 1.7 * k, 11, .9, rr(.95, 1.08), .2, 0, 99999, 0); }
+  leaves(part, 'willow', top[0], top[1] + H * .45, top[2], 2.2 * k, .9, 2.2 * k, 18, .9, 1.06, .2, 0, 99999, 0);
+  const bk = B._bk(part, 'willow', true); if (!bk.w) bk.w = [];
+  for (let s = 0; s < 46; s++) { const t = tips[s % 5], f = rr(.25, 1.12), a = t[1], bx = lerp(top[0], t[0][0], f) + rr(-.7, .7), bz = lerp(top[2], t[0][2], f) + rr(-.7, .7), by = lerp(top[1] + H * .3, t[0][1], Math.min(f, 1)) + rr(-.1, .3);
+    const len = Math.min(rr(2.6, 5.4) * k, by - y0 - rr(.5, 1.5)), ph = rnd() * TAU, wx = Math.cos(ph) * .24, wz = Math.sin(ph) * .24, ox = Math.cos(a) * .32, oz = Math.sin(a) * .32, tint = rr(.85, 1.15), v0 = rnd();
+    const pt = j => { const u = j / 2; return [bx + ox * Math.sin(u * 1.6), by - len * u, bz + oz * Math.sin(u * 1.6), Math.pow(u, 1.3) * len * .36, v0 + u * len / 1.25]; };
+    for (let j = 0; j < 2; j++) { const p = pt(j), q = pt(j + 1), v = [[p[0] - wx, p[1], p[2] - wz, p[3], 0, p[4]], [p[0] + wx, p[1], p[2] + wz, p[3], 1, p[4]], [q[0] - wx, q[1], q[2] - wz, q[3], 0, q[4]], [q[0] + wx, q[1], q[2] + wz, q[3], 1, q[4]]];
+      [0, 1, 2, 1, 3, 2].forEach(i => { const w = v[i]; bk.p.push(w[0], w[1], w[2]); bk.n.push(ox, .85, oz); const c = tint * (1 - j * .04); bk.c.push(c, c, c * .93); bk.w.push(w[0], w[1], w[2], w[3]); bk.uv.push(w[4], -w[5]); }); } } }
+// 小山：高度场（带起伏与沟壑），返回取高函数
+function hillField(part, mat, cx, cz, rx, rz, h, seed, nx = 72, nz = 36, base = Y0, pw = .6, tint = 1) {
+  const Hf = (x, z) => { const u = (x - cx) / rx, v = (z - cz) / rz, d = 1 - u * u - v * v; if (d <= 0) return base - .6; const e = Math.pow(d, pw);
+    return base - .6 + (h + .6) * e * (.76 + .48 * fbm(x * .017 + seed, z * .017 + seed * 1.7, 3)) + (fbm(x * .1 + seed, z * .1, 2) - .5) * 2.4 * Math.min(1, d * 4); };
+  const pos = [], col = [], idx = [];
+  for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) { const x = cx + (i / nx * 2 - 1) * rx * 1.01, z = cz + (j / nz * 2 - 1) * rz * 1.01; pos.push(x, Hf(x, z), z); const v = (.86 + .2 * vnoise(x * .05 + seed, z * .05)) * (.92 + .16 * vnoise(x * .23, z * .23 + seed)); col.push(v, v, v); }
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals(); B.add(part, mat, g, null, tint); return Hf;
+}
 function bamboo(x, z, n, sp) { for (let i = 0; i < n; i++) { const bx = x + rr(-sp, sp), bz = z + rr(-sp, sp), h = rr(6, 9.5), lx = rr(-.7, .7), lz = rr(-.7, .7);
   limb('bamboo', [bx, Y0, bz], [bx + lx, Y0 + h, bz + lz], .045, .022, 'bamboo'); for (let j = 0; j < 4; j++) { const f = .45 + j * .16; leaves('bamboo', 'bamboo', bx + lx * f * f + rr(-.2, .2), Y0 + h * f, bz + lz * f * f + rr(-.2, .2), rr(.7, 1.1), rr(.5, .8), rr(.7, 1.1), 5, .78, rr(.9, 1.15), .5, 0, 99999, 0); } } }
 
@@ -975,7 +1023,7 @@ function buildFlora() {
   [[18, 24], [20, -32], [17, -46], [19, 62], [18, 84], [20, -60], [17.5, -84], [19, 104], [19, -108]].forEach((p, i) => tree(i % 2 ? 'maple' : 'ginkgo', p[0], p[1], 'trees', .9));
   for (let i = 0; i < 46; i++) { const x = rr(30, 80), z = rr(-190, 190); tree(['camphor', 'plane', 'ginkgo', 'camphor', 'maple'][i % 5], x, z, 'trees', rr(1.05, 1.35)); }
   for (let i = 0; i < 80; i++) { const x = rr(64, 135), z = rr(-215, 215); treeLite(['camphor', 'plane', 'camphor', 'ginkgo'][i % 4], x, z, rr(.95, 1.3)); }
-  for (let i = 0; i < 170; i++) { const x = rr(125, 380), z = rr(-260, 260); blob('trees', 'farTree', x, Y0 + rr(7, 11), z, rr(6, 9), rr(7, 12), rr(6, 9), rr(.75, 1.05), 0, 1); }
+  for (let i = 0; i < 170; i++) { const x = rr(125, 380), z = rr(-260, 260); treeFar('trees', ['camphor', 'plane', 'camphor', 'ginkgo', 'maple'][i % 5], x, Y0, z, rr(.95, 1.3)); }
   bamboo(28.5, 6.5, 26, 3.2); bamboo(28.5, -7, 26, 3.2); bamboo(29, 20, 18, 2.6); bamboo(29, -24, 18, 2.6);
   for (let z = -168; z <= 168; z += 14) { if ((z > 28 && z < 58) || Math.abs(z) < 6) continue; for (let i = 0; i < 3; i++) shrub('azalea', pathX(z) - 2.4 + rr(-.3, .3), z - 2.2 - i * 1.25, rr(.6, .8), rr(.55, .75)); }
   for (let z = -70; z <= 28; z += 5.2) { if (Math.abs(z) < 3) continue; shrub('shrub', 22.6 + rr(-.3, .2), z + rr(-.6, .6), rr(1, 1.4), rr(1.3, 1.9)); }
@@ -989,12 +1037,16 @@ function buildLotus() {
   const regs = [[-20, -1, -18.5, -8.4, 150], [-20.5, 0.6, 2.4, 13.5, 170], [-9, -1, -33, -22.5, 70], [-30, -22.6, -1.5, 4.5, 40]], L = lotus.leaves;
   regs.forEach(r => { let tries = 0, got = 0; while (got < r[4] && tries++ < 4000) { const x = rr(r[0], r[1]), z = rr(r[2], r[3]); if (isLand(x - .9, z) || distBridge(x, z) < 1.75) continue; if (Math.abs(x - PAV.x) < 5.6 && Math.abs(z - PAV.z) < 5.6) continue;
     const rad = rr(.26, .5); if (L.some(q => Math.hypot(q.x - x, q.z - z) < (q.r + rad) * .75)) continue; L.push({ x, z, r: rad, h: Math.pow(rnd(), 1.6) * .85 + .04, rot: rnd() * TAU, tx: rr(-.22, .22), tz: rr(-.22, .22), fl: rnd() < .17, c: rr(.85, 1.12), s: rnd() }); got++; } });
-  const lg = new THREE.CircleGeometry(1, 16), lp = lg.attributes.position; lg.rotateX(-PI / 2);
-  for (let i = 0; i < lp.count; i++) { const x = lp.getX(i), z = lp.getZ(i), r = Math.hypot(x, z), a = Math.atan2(z, x); lp.setY(i, r * .16 + Math.sin(a * 5) * .045 * r - .1); } lg.computeVertexNormals();
-  lotus.leafM = new THREE.InstancedMesh(lg, makeMat('lotus', { vertexColors: false }), L.length); lotus.leafM.receiveShadow = true;
+  // 荷叶：盾形叶面，中心微凹、叶缘起伏，二十条放射叶脉用顶点色画出
+  const lg = new THREE.BufferGeometry(); { const NA = 20, NR = 3, pos = [], col = [], idx = [];
+    for (let j = 0; j <= NR; j++) for (let i = 0; i < NA; i++) { const r = Math.pow(j / NR, .8), a = i / NA * TAU, x = Math.cos(a) * r, z = Math.sin(a) * r; pos.push(x, r * .17 + Math.sin(a * 5) * .045 * r + Math.sin(a * 11 + 1.3) * .022 * r * r - .1 + (j ? 0 : -.015), z);
+      const vein = Math.pow(Math.abs(Math.cos(a * 10)), 10) * (.25 + .75 * r) * (j ? 1 : 0), v = .8 + .2 * r + .22 * vein - (j === NR ? .08 : 0) + (j ? 0 : .25); col.push(v * .97, v, v * .9); }
+    for (let j = 0; j < NR; j++) for (let i = 0; i < NA; i++) { const p = j * NA + i, q = j * NA + (i + 1) % NA; idx.push(p, p + NA, q, q, p + NA, q + NA); }
+    lg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); lg.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); lg.setIndex(idx); lg.computeVertexNormals(); }
+  lotus.leafM = new THREE.InstancedMesh(lg, makeMat('lotus', { vertexColors: true }), L.length); lotus.leafM.receiveShadow = true;
   lotus.stemM = new THREE.InstancedMesh(new THREE.CylinderGeometry(.012, .016, 1, 5).translate(0, .5, 0), makeMat('lotus', { vertexColors: false }), L.length);
   const fb = new Builder();
-  for (let ring = 0; ring < 2; ring++) for (let i = 0; i < (ring ? 6 : 9); i++) { const a = i * TAU / (ring ? 6 : 9) + ring * .4, tilt = ring ? .32 : .95; const g = new THREE.SphereGeometry(1, 5, 3), n = g.attributes.position.count, col = new Float32Array(n * 3); for (let k = 0; k < n; k++) { const y = g.attributes.position.getY(k) * .5 + .5; col[k * 3] = 1; col[k * 3 + 1] = lerp(1.25, .86, y); col[k * 3 + 2] = lerp(1.2, .92, y); } g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  for (let ring = 0; ring < 2; ring++) for (let i = 0; i < (ring ? 6 : 9); i++) { const a = i * TAU / (ring ? 6 : 9) + ring * .4, tilt = ring ? .32 : .95; const g = new THREE.SphereGeometry(1, 6, 3), n = g.attributes.position.count, col = new Float32Array(n * 3); for (let k = 0; k < n; k++) { const y = g.attributes.position.getY(k) * .5 + .5; col[k * 3] = 1; col[k * 3 + 1] = lerp(1.25, .86, y); col[k * 3 + 2] = lerp(1.2, .92, y); } g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     const m = new Matrix4().makeRotationY(a).multiply(new Matrix4().makeRotationZ(-tilt)).multiply(new Matrix4().makeTranslation(0, .13, 0)).multiply(new Matrix4().makeScale(.045, .14, .075)); fb.add('lotus', 'lotusFl', g, m, 1); }
   { const g = new THREE.CylinderGeometry(.045, .03, .05, 8), n = g.attributes.position.count, col = new Float32Array(n * 3); for (let k = 0; k < n; k++) { col[k * 3] = 1.0; col[k * 3 + 1] = 1.15; col[k * 3 + 2] = .35; } g.setAttribute('color', new THREE.BufferAttribute(col, 3)); fb.add('lotus', 'lotusFl', g, new Matrix4().makeTranslation(0, .05, 0), 1); }
   const bk = fb.b.values().next().value, fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(bk.p, 3)); fg.setAttribute('normal', new THREE.Float32BufferAttribute(bk.n, 3)); fg.setAttribute('color', new THREE.Float32BufferAttribute(bk.c, 3));
@@ -1016,81 +1068,143 @@ function updateLotus(s) {
   [lotus.leafM, lotus.stemM, lotus.flM].forEach(m => m.instanceMatrix.needsUpdate = true); lotus.leafM.instanceColor.needsUpdate = true;
 }
 
-// 锦鲤
+// 锦鲤：三维鱼体（躯干、背鳍、胸鳍、腹鳍、臀鳍、叉形尾），摆尾在顶点着色器里完成；鱼群互相避让，不会叠在一起
 const koi = [];
+const KOI_T = [0, .04, .12, .26, .42, .58, .74, .88, 1], KOI_W = [.016, .058, .094, .112, .106, .086, .058, .034, .016], KOI_H = [.02, .06, .1, .124, .12, .1, .072, .048, .034];
+const KOI_PAL = [   // 底色、斑色、墨斑、斑块阈值
+  { b: [.97, .95, .9], p: [.88, .2, .1], th: .5 },                       // 红白
+  { b: [.97, .95, .9], p: [.88, .2, .1], k: [.07, .07, .08], th: .52 },  // 大正三色
+  { b: [.96, .72, .2], th: 2 },                                          // 黄金
+  { b: [.9, .3, .12], th: 2 },                                           // 红鲤
+  { b: [.95, .93, .9], p: [.08, .08, .09], th: .55 },                    // 白写
+  { b: [.97, .86, .5], p: [.93, .46, .12], th: .5 },                     // 黄写
+];
+function koiGeo(seed, pal) {
+  const r = mulberry(seed * 977 + 13), NS = 26, NR = 14, pos = [], col = [], ak = [], idx = [], ph = r() * 9, fq = 5.2 + r() * 2.2, so = r() * 40;
+  const prof = (A, t) => { let i = 0; while (i < KOI_T.length - 2 && t > KOI_T[i + 1]) i++; const f = clamp((t - KOI_T[i]) / (KOI_T[i + 1] - KOI_T[i]), 0, 1), s = f * f * (3 - 2 * f); return lerp(A[i], A[i + 1], s); };
+  const V = (x, y, z, c, fin) => { pos.push(x, y, z); col.push(c[0], c[1], c[2]); ak.push(ph, fq, fin); return pos.length / 3 - 1; };
+  const skin = (t, a) => { const up = Math.sin(a), n = fbm(t * 3.4 + so, Math.cos(a) * 1.3 + up * .6 + so * .37, 3), n2 = fbm(t * 9 + so * 2, Math.cos(a) * 4 + so, 2);
+    let c = pal.b.slice(); if (pal.p && n > pal.th && up > -.35 && t > .05) c = pal.p.slice(); if (pal.k && n2 > .66 && up > -.1) c = pal.k.slice();
+    const sh = (pal.p ? 1 : .86 + .28 * n) * (.8 + .2 * (1 - up) * .5 + (up < -.3 ? .12 : 0)); return [c[0] * sh, c[1] * sh, c[2] * sh]; };
+  for (let i = 0; i <= NS; i++) { const t = i / NS, w = prof(KOI_W, t), h = prof(KOI_H, t);
+    for (let j = 0; j < NR; j++) { const a = j / NR * TAU, s = Math.sin(a); let c = skin(t, a); if (i === 2 && (j === 1 || j === NR / 2 - 1)) c = [.03, .03, .03]; V(.5 - t, s * h * (s < 0 ? .8 : 1), Math.cos(a) * w, c, 1); } }
+  for (let i = 0; i < NS; i++) for (let j = 0; j < NR; j++) { const a = i * NR + j, b = i * NR + (j + 1) % NR, c = a + NR, d = b + NR; idx.push(a, b, c, b, d, c); }
+  const nose = V(.508, 0, 0, skin(0, 1.57), 1), tail = V(-.5, 0, 0, skin(1, 1.57), 1); for (let j = 0; j < NR; j++) { idx.push(nose, (j + 1) % NR, j, tail, NS * NR + j, NS * NR + (j + 1) % NR); }
+  const fc = pal.b.map((v, i) => lerp(v, [1, .96, .9][i], .35)), fan = P => { const o = P.map(p => V(p[0], p[1], p[2], [fc[0] * p[3], fc[1] * p[3], fc[2] * p[3]], .62)); for (let i = 1; i < o.length - 1; i++) idx.push(o[0], o[i], o[i + 1]); };
+  { const P = [[-.47, 0, 0, .9]]; for (let i = 0; i <= 8; i++) { const th = lerp(-1.0, 1.0, i / 8), l = .3 * (.5 + .5 * Math.pow(Math.abs(th), 1.4)); P.push([-.49 - l * Math.cos(th), l * Math.sin(th) * 1.05, 0, 1.05 - .12 * (i % 2)]); } fan(P); }          // 尾鳍
+  { const n = 7, lo = [], hi = []; for (let i = 0; i <= n; i++) { const u = i / n, t = lerp(.27, .64, u); lo.push([.5 - t, prof(KOI_H, t) * .96, 0, .9]); hi.push([.5 - t - .04, prof(KOI_H, t) + .012 + .07 * Math.pow(Math.sin(PI * Math.min(u * 1.25, 1)), .7), 0, 1.02]); }
+    for (let i = 0; i < n; i++) fan([lo[i], lo[i + 1], hi[i + 1], hi[i]]); }                                                    // 背鳍
+  [1, -1].forEach(sd => { const w2 = prof(KOI_W, .2) * .86, y2 = -prof(KOI_H, .2) * .5; fan([[.3, y2, sd * w2, .9], [.24, y2 - .02, sd * (w2 + .16), 1.05], [.17, y2 - .03, sd * (w2 + .15), 1], [.12, y2 - .03, sd * (w2 + .08), 1], [.23, y2, sd * w2, .9]]);       // 胸鳍
+    const w5 = prof(KOI_W, .52) * .5, y5 = -prof(KOI_H, .52) * .72; fan([[-.02, y5, sd * w5, .9], [-.07, y5 - .05, sd * (w5 + .07), 1.05], [-.13, y5 - .04, sd * (w5 + .04), 1], [-.09, y5, sd * w5, .9]]); });                                                          // 腹鳍
+  { const t = .74, y = -prof(KOI_H, t) * .78; fan([[.5 - t, y, 0, .9], [.5 - t - .1, y - .065, 0, 1.05], [.5 - t - .11, y - .01, 0, .95]]); }                                                                                                                              // 臀鳍
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('aK', new THREE.Float32BufferAttribute(ak, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
 function buildKoi() {
-  const sh = new THREE.Shape(); sh.moveTo(.3, 0); sh.quadraticCurveTo(.2, .1, 0, .085); sh.quadraticCurveTo(-.16, .06, -.22, .02); sh.lineTo(-.34, .1); sh.lineTo(-.3, 0); sh.lineTo(-.34, -.1); sh.lineTo(-.22, -.02); sh.quadraticCurveTo(-.16, -.06, 0, -.085); sh.quadraticCurveTo(.2, -.1, .3, 0);
-  const g = new THREE.ShapeGeometry(sh, 6); g.rotateX(-PI / 2);
-  const cols = [0xe8502a, 0xf28a2e, 0xf4efe6, 0xe23a26, 0xf1c13c, 0xe8502a, 0xf4efe6];
-  for (let i = 0; i < 16; i++) { const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: cols[i % cols.length], transparent: true, opacity: .78, depthWrite: false })); m.renderOrder = 2; const k = { m, x: rr(-16, -3), z: rr(-5, 6), a: rnd() * TAU, v: rr(.35, .7), s: rr(.8, 1.35), ph: rnd() * 9 }; m.scale.setScalar(k.s); world.add(m); regMesh(m, 'koi', null); hideInRefl.push(m); koi.push(k); }
+  const mat = new THREE.MeshPhongMaterial({ vertexColors: true, transparent: true, side: THREE.DoubleSide, shininess: 70, specular: 0x555555, depthWrite: false });
+  mat.onBeforeCompile = sh => { sh.uniforms.uTime = U.time; sh.uniforms.uDeep = waterU.uDeep;
+    // 鱼在水面以下：深度按视线与水面的交点写入，这样岸、桥照常遮挡，而不透明的水面不会把鱼裁掉
+    sh.vertexShader = 'attribute vec3 aK;uniform float uTime;varying float vDp,vFin;\n' + sh.vertexShader
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nfloat tw=clamp(.5-position.x,0.,1.4);transformed.z+=sin(uTime*aK.y+aK.x-tw*3.4)*(.008+.085*tw*tw);vFin=aK.z;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\n{vec4 wp4=modelMatrix*vec4(transformed,1.);vDp=-wp4.y;float tt=(cameraPosition.y-.03)/max(cameraPosition.y-wp4.y,.001);vec4 sc=projectionMatrix*viewMatrix*vec4(cameraPosition+(wp4.xyz-cameraPosition)*tt,1.);gl_Position.z=sc.z/sc.w*gl_Position.w;}');
+    sh.fragmentShader = 'uniform vec3 uDeep;varying float vDp,vFin;\n' + sh.fragmentShader
+      .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n{float dp=clamp(vDp*1.5,0.,1.);gl_FragColor.rgb=mix(gl_FragColor.rgb,uDeep*1.15,dp*.6);float cz=clamp(dot(normalize(vViewPosition),normalize((viewMatrix*vec4(0.,1.,0.,0.)).xyz)),0.,1.);gl_FragColor.a*=(1.-pow(1.-cz,2.2)*.96)*mix(.95,.55,dp)*vFin;}'); };
+  for (let i = 0; i < 20; i++) {
+    const m = new THREE.Mesh(koiGeo(i + 1, KOI_PAL[[0, 0, 1, 2, 3, 0, 4, 5, 1, 0][i % 10]]), mat), s = rr(.5, .9), a = i / 20 * TAU + rr(-.1, .1), rad = 2.2 + (i % 4) * 1.5;
+    const k = { m, x: -9.5 + Math.cos(a) * rad, z: 1 + Math.sin(a) * rad, a: a + PI / 2, sp: .3, v: rr(.32, .6), s, d: rr(.14, .4), ph: rnd() * 9, w: 0, turn: i % 2 ? 1 : -1, da: 0 };
+    m.scale.setScalar(s); m.rotation.order = 'YXZ'; m.renderOrder = 2; m.frustumCulled = false; world.add(m); regMesh(m, 'koi', null); hideInRefl.push(m); koi.push(k);
+  }
 }
 let feed = null;
+const koiBlocked = (x, z) => isLand(x + .9, z) || (Math.abs(x - PAV.x) < 5.8 && Math.abs(z - PAV.z) < 5.8);
 function updateKoi(dt, t) {
-  koi.forEach(k => {
-    let tx = -9.5, tz = 1, pull = .015 * Math.max(0, Math.hypot(k.x + 9.5, k.z - 1) - 7);
-    if (feed && t - feed.t < 9) { tx = feed.x; tz = feed.z; pull = .9; }
-    const want = Math.atan2(tz - k.z, tx - k.x); let da = ((want - k.a + PI * 3) % TAU) - PI;
-    k.a += da * clamp(pull, 0, 1) * dt * 1.6 + Math.sin(t * .7 + k.ph) * dt * .5;
-    const nx = k.x + Math.cos(k.a) * k.v * dt * (pull > .5 ? 2.2 : 1), nz = k.z + Math.sin(k.a) * k.v * dt * (pull > .5 ? 2.2 : 1);
-    if (isLand(nx + .8, nz) || (Math.abs(nx - PAV.x) < 5.6 && Math.abs(nz - PAV.z) < 5.6)) k.a += PI * .5 * dt * 4; else { k.x = nx; k.z = nz; }
-    k.m.position.set(k.x, .012, k.z); k.m.rotation.y = -k.a + Math.sin(t * 5 * k.v + k.ph) * .16;
-  });
+  dt = Math.min(dt, .1); const fd = feed && t - feed.t < 10 ? feed : null, HX = -9.5, HZ = 1;
+  for (const k of koi) {
+    const ca = Math.cos(k.a), sa = Math.sin(k.a); k.w = clamp(k.w * (1 - dt * .5) + (rnd() - .5) * dt * 3, -1, 1);
+    let dx = ca - sa * k.w * .55, dz = sa + ca * k.w * .55;
+    const hx = HX - k.x, hz = HZ - k.z, hd = Math.hypot(hx, hz) || 1, pull = clamp((hd - 5) / 6, 0, 1.4); dx += hx / hd * pull; dz += hz / hd * pull;
+    if (fd) { const fx = fd.x - k.x, fz = fd.z - k.z, fl = Math.hypot(fx, fz) || 1, g = fl > 1.3 ? 1.8 : -.4; dx += fx / fl * g - fz / fl * .5 * k.turn; dz += fz / fl * g + fx / fl * .5 * k.turn; }
+    for (const o of koi) { if (o === k) continue; const ox = k.x - o.x, oz = k.z - o.z, d = Math.hypot(ox, oz), R = .95 * (k.s + o.s); if (d < R && d > 1e-4) { const f = (1 - d / R) * 2.6; dx += ox / d * f; dz += oz / d * f; } }
+    if (koiBlocked(k.x + ca * 1.6, k.z + sa * 1.6)) { dx += -sa * k.turn * 2.4 - ca * .8; dz += ca * k.turn * 2.4 - sa * .8; }
+    const da = ((Math.atan2(dz, dx) - k.a + PI * 3) % TAU) - PI; k.da = lerp(k.da, da, Math.min(1, dt * 4)); k.a += clamp(da, -1.2, 1.2) * dt * 2.1;
+    k.sp = lerp(k.sp, k.v * (fd ? 2 : 1) * (1 - .45 * Math.min(Math.abs(da), 1)), Math.min(1, dt * 2));
+    const nx = k.x + Math.cos(k.a) * k.sp * dt, nz = k.z + Math.sin(k.a) * k.sp * dt; if (koiBlocked(nx, nz)) k.a += k.turn * dt * 3; else { k.x = nx; k.z = nz; }
+  }
+  // 硬约束：两条鱼的间距不小于体长之和的一半上下，靠得太近就各自让开
+  for (let i = 0; i < koi.length; i++) for (let j = i + 1; j < koi.length; j++) { const a = koi[i], b = koi[j], ox = a.x - b.x, oz = a.z - b.z, d = Math.hypot(ox, oz), R = .5 * (a.s + b.s);
+    if (d < R) { const f = (R - d) / 2 / (d || 1), px = (d ? ox : 1) * f, pz = (d ? oz : 0) * f; if (!koiBlocked(a.x + px, a.z + pz)) { a.x += px; a.z += pz; } if (!koiBlocked(b.x - px, b.z - pz)) { b.x -= px; b.z -= pz; } } }
+  for (const k of koi) { k.m.position.set(k.x, -(fd ? Math.min(k.d, .16) : k.d) + Math.sin(t * .6 + k.ph) * .03, k.z); k.m.rotation.set(clamp(k.da * .25, -.3, .3), -k.a, 0); }
 }
 
 // 摇橹船
 const boats = [];
-function buildBoat(x, z, ry) {
-  const bb = new Builder(), grp = new THREE.Group(), n = 16, Lh = 3.3, sec = [];
+function buildBoat(x, z, ry, sc = 1) {
+  const bb = new Builder(), grp = new THREE.Group(), n = 16, Lh = 3.3, sec = [], fancy = sc > 1;
   for (let i = 0; i <= n; i++) { const s = i / n * 2 - 1, w = .8 * Math.pow(Math.max(1 - Math.pow(Math.abs(s), s < 0 ? 3.2 : 2.2), 0), .7) + .03, yg = .4 + .26 * s * s + (s > 0 ? .1 * s * s * s : 0), yk = -.14 + .34 * Math.pow(Math.abs(s), 3); sec.push([[s * Lh, yg, -w], [s * Lh, yk + .1, -w * .7], [s * Lh, yk, 0], [s * Lh, yk + .1, w * .7], [s * Lh, yg, w]]); }
   const pos = [];
   for (let i = 0; i < n; i++) for (let j = 0; j < 4; j++) { const a = sec[i][j], b = sec[i][j + 1], c = sec[i + 1][j], d = sec[i + 1][j + 1]; pos.push(...a, ...c, ...b, ...b, ...c, ...d, ...a, ...b, ...c, ...b, ...d, ...c); }
   const hg = new THREE.BufferGeometry(); hg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); hg.computeVertexNormals(); bb.add('boat', 'boatWd', hg, null, 1);
   for (let i = 0; i < n; i++) [0, 4].forEach(j => bb.seg('boat', 'boatWd', sec[i][j], sec[i + 1][j], .09, .06, 1.25));
   bb.box('boat', 'boatWd', 0, .02, 0, 4.6, .04, 1.0, 0, 1.2); [-1.9, -.2, 1.7].forEach(xx => bb.box('boat', 'boatWd', xx, .33, 0, .3, .04, 1.36, 0, 1.3));
-  [[-1.25, -.62], [-1.25, .62], [1.25, -.62], [1.25, .62]].forEach(p => bb.box('boat', 'boatWd', p[0], 1.08, p[1], .045, 1.36, .045, 0, .8));
-  for (let k = 0; k < 9; k++) { const o = -.76 + k * .19, y = 1.74 + .17 * Math.cos(o / .76 * PI / 2); bb.seg('boat', k % 2 ? 'canvasW' : 'canopy', [-1.5, y, o], [1.5, y, o], .2, .03, 1); }
-  [-.86, .86].forEach(o => bb.box('boat', 'canopy', 0, 1.66, o, 3.0, .16, .02, 0, .9));
+  if (fancy) {   // 画舫：船上起一间小轩，朱柱、亮窗、四坡瓦顶
+    bb.box('boat', 'wood', 0, .92, 0, 3.0, .9, 1.16, 0, .9); [-.59, .59].forEach(o => bb.box('boat', 'lampGl', 0, 1.02, o, 2.6, .42, .02, 0, 1));
+    for (let i = 0; i < 6; i++) [-.6, .6].forEach(o => bb.box('boat', 'wood', -1.5 + i * .6, .95, o, .07, .96, .07));
+    buildRoof('boat', 'boat', { rect: 1, x0: 1.0, z0: .04, x1: 1.95, z1: .98, h: .46, sag: .2, lift: .2, flare: .08, cx: 0, cy: 1.4, cz: 0 }, { B: bb, sp: .16, nu: 6, nt: 5 });
+    bb.seg('boat', 'ridge', [-1.05, 1.9, 0], [1.05, 1.9, 0], .09, .12, .95);
+  } else {
+    [[-1.25, -.62], [-1.25, .62], [1.25, -.62], [1.25, .62]].forEach(p => bb.box('boat', 'boatWd', p[0], 1.08, p[1], .045, 1.36, .045, 0, .8));
+    for (let k = 0; k < 9; k++) { const o = -.76 + k * .19, y = 1.74 + .17 * Math.cos(o / .76 * PI / 2); bb.seg('boat', k % 2 ? 'canvasW' : 'canopy', [-1.5, y, o], [1.5, y, o], .2, .03, 1); }
+    [-.86, .86].forEach(o => bb.box('boat', 'canopy', 0, 1.66, o, 3.0, .16, .02, 0, .9));
+  }
   bb.seg('boat', 'boatWd', [-2.6, .62, .35], [-4.3, -.25, .95], .07, .05, 1.1); bb.box('boat', 'boatWd', -2.7, .55, .3, .08, .3, .08);
   bb.add('boat', 'lantern', new THREE.SphereGeometry(.11, 8, 6), TM(1.52, 1.5, 0, 0, 1, 1.2, 1));
-  bb.flush(grp, { local: true }); grp.position.set(x, 0, z); grp.rotation.y = ry; world.add(grp);
-  const gi = addGlow(x + Math.cos(ry) * 1.52, 1.5, z - Math.sin(ry) * 1.52, 0xff6a30, 1.5);
-  boats.push({ grp, ph: rnd() * 9, ry, gi });
+  bb.flush(grp, { local: true }); grp.position.set(x, 0, z); grp.rotation.y = ry; grp.scale.setScalar(sc); world.add(grp);
+  const gi = addGlow(x + Math.cos(ry) * 1.52 * sc, 1.5 * sc, z - Math.sin(ry) * 1.52 * sc, fancy ? 0xffb968 : 0xff6a30, fancy ? 9 : 1.5);
+  const o = { grp, ph: rnd() * 9, ry, gi }; boats.push(o); return o;
 }
 
 // 远景：苏堤、群山、雷峰塔、保俶塔、三潭石塔
+const suX = z => -560 + 34 * Math.sin(z / 380), SU_BRIDGES = [-690, -470, -250, -30, 190, 410], SANTAN = [[-215, 114], [-240, 140], [-190, 140]], FARPOS = {};
 function buildFar() {
   // 群山：沿圆弧的层叠山脊
-  const ridge = (mat, R, a0, a1, hgt, D, seed, bumps = [], shoreTrees = 0) => {
-    const n = Math.round((a1 - a0) / 1.1), pos = [], col = [], idx = [], NR = 8;
-    const HR = i => { const a = (a0 + (a1 - a0) * i / n) * PI / 180, e = Math.sin(PI * clamp(i / n, 0, 1)), nz = fbm(i * .11 + seed, seed * 3.1, 4);
-      let h = hgt * (.3 + nz * 1.15) * Math.pow(e, .55); bumps.forEach(b => { h += b[1] * Math.exp(-Math.pow((a * 180 / PI - b[0]) / b[2], 2)) * Math.pow(e, .3); }); return [a, h, R * (1 + (fbm(i * .07, seed, 2) - .5) * .12)]; };
-    for (let i = 0; i <= n; i++) { const hr = HR(i), a = hr[0], h = hr[1], rw = hr[2], A = Math.min(D * .7, 130);
-      const c = Math.cos(a), s = Math.sin(a);
-      // 自湖岸平地起，经山脚、山腰到山脊，再从背面落回地面：整座山是落地的实体
-      [[rw - D - A, -.6, 1.12], [rw - D - A * .9, .9, 1.14], [rw - D, 2.2 + h * .04, 1.06], [rw - D * .62, h * .5, .95], [rw - D * .25, h * .9, .88], [rw, h, .98], [rw + D * .5, h * .5, .82], [rw + D * 1.05, -.6, .78]].forEach(q => { pos.push(c * q[0], q[1], s * q[0]); const v = q[2] * (.92 + .16 * vnoise(i * .4, q[0] * .01)); col.push(v, v, v); });
-      if (i) for (let k = 0; k < NR - 1; k++) { const p = (i - 1) * NR + k, q = i * NR + k; idx.push(p, p + 1, q, p + 1, q + 1, q); }
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals(); B.add('far-hill', mat, g, null, 1);
-    if (shoreTrees) for (let i = 0; i < n; i += .3 / shoreTrees) { const hr = HR(i), A = Math.min(D * .7, 130), rs = hr[2] - D - A * rr(.2, .85), sz = rr(7, 10); blob('far-hill', i % 9 < 1 ? 'farPeach' : 'farTree', Math.cos(hr[0]) * rs, 1.2 + sz * .6, Math.sin(hr[0]) * rs, sz, sz * rr(.8, 1.1), sz, rr(.78, 1.05), 0, 0); }
+  const ridge = (mat, R, a0, a1, hgt, D, seed, bumps = [], shoreTrees = 0, o = {}) => {
+    const step = o.step || 1.1, n = Math.round((a1 - a0) / step), A = Math.min(D * .7, 130), Rf = o.Rf || (() => 0), bump = o.bump == null ? 5 : o.bump, NS = o.rows || 30, pos = [], col = [], idx = [], idxF = [];
+    const HR = i => { const ad = a0 + (a1 - a0) * i / n, a = ad * PI / 180, e = Math.sin(PI * clamp(i / n, 0, 1)), u = (ad - a0) / 1.1, nz = fbm(u * .11 + seed, seed * 3.1, 4);
+      let h = hgt * (.3 + nz * 1.15) * Math.pow(e, .55); bumps.forEach(b => { h += b[1] * Math.exp(-Math.pow((ad - b[0]) / b[2], 2)) * Math.pow(e, .3); }); return [a, h, (R + Rf(ad)) * (1 + (fbm(u * .07, seed, 2) - .5) * .12)]; };
+    // 自湖岸平地起，经山脚、山腰到山脊，再从背面落回地面：整座山是落地的实体。f∈[0,1] 沿剖面取点
+    const KEY = h => [[-D - A, -.6, 1.12], [-D - A * .9, .9, 1.14], [-D - A * .45, 1.5, 1.1], [-D, 2.2 + h * .04, 1.06], [-D * .82, h * .22, 1], [-D * .62, h * .5, .95], [-D * .43, h * .74, .9], [-D * .25, h * .9, .88], [-D * .1, h * .975, .94], [0, h, .98], [D * .25, h * .84, .86], [D * .5, h * .5, .82], [D * 1.05, -.6, .78]];
+    const FQ = f => Math.pow(f, 1.25);     // 朝湖一面取点更密
+    const at = (i, f) => { const hr = HR(i), K = KEY(hr[1]), q = clamp(FQ(f), 0, 1) * (K.length - 1), k = Math.min(K.length - 2, q | 0), t = q - k, r = hr[2] + lerp(K[k][0], K[k + 1][0], t), x = Math.cos(hr[0]) * r, z = Math.sin(hr[0]) * r;
+      let y = lerp(K[k][1], K[k + 1][1], t); const up = clamp((y - 2.2) / 14, 0, 1) * clamp((1 - f) * 12, 0, 1); y += up * ((fbm(x * .013 + seed, z * .013, 3) - .5) * hr[1] * .3 + (fbm(x * .085, z * .085 + seed, 2) - .5) * bump);
+      return [x, y, z, lerp(K[k][2], K[k + 1][2], t)]; };
+    for (let i = 0; i <= n; i++) { for (let k = 0; k <= NS; k++) { const p = at(i, k / NS); pos.push(p[0], p[1], p[2]); const v = p[3] * (.9 + .2 * vnoise(p[0] * .02, p[2] * .02 + seed)) * (.93 + .14 * vnoise(p[0] * .11 + seed, p[2] * .11)); col.push(v, v, v); }
+      if (i) for (let k = 0; k < NS; k++) { const p = (i - 1) * (NS + 1) + k, q = i * (NS + 1) + k; (FQ((k + 1) / NS) * 12 <= 3.02 ? idxF : idx).push(p, q, p + 1, p + 1, q, q + 1); } }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx.concat(idxF)); g.computeVertexNormals(); const gF = g.clone(); g.setIndex(idx); B.add('far-hill', mat, g.toNonIndexed(), null, 1); if (idxF.length) { gF.setIndex(idxF); B.add('far-hill', 'farLand', gF.toNonIndexed(), null, .96); }
+    const KIND = ['camphor', 'plane', 'camphor', 'ginkgo', 'camphor', 'maple', 'camphor', 'plane', 'peach'], fInv = r => Math.pow(clamp(r, 0, 1), 1 / 1.25);
+    if (shoreTrees && o.near) { // 近山：水边一排、山脚成片，都是带叶面的树
+      for (let i = 0, c = 0; i < n; i += 1.9 / (step * 6) / shoreTrees, c++) { const p = at(i + rr(-.3, .3), fInv(rr(.085, .2))); treeFar('far-hill', KIND[c % 9], p[0], p[1], p[2], rr(.8, 1.15)); }
+      for (let c = 0; c < (o.slope || 0); c++) { const p = at(rr(n * .03, n * .97), fInv(.235 + .34 * Math.pow(rnd(), 1.6))); treeFar('far-hill', KIND[c % 8], p[0], p[1] - 1.2, p[2], rr(1.1, 1.7), 1); } }
+    else if (shoreTrees) for (let i = 0; i < n; i += .3 / shoreTrees / (step / 1.1)) { const hr = HR(i), rs = hr[2] - D - A * rr(.2, .85), sz = rr(7, 10); blob('far-hill', i % 9 < 1 ? 'farPeach' : 'farTree', Math.cos(hr[0]) * rs, 1.2 + sz * .6, Math.sin(hr[0]) * rs, sz, sz * rr(.8, 1.1), sz, rr(.78, 1.05), 0, 0); }
     return deg => HR((deg - a0) / (a1 - a0) * n);
   };
-  ridge('hill1', 780, 96, 172, 95, 150, 3, [], 1); const northH = ridge('hill1', 1080, 236, 300, 105, 190, 11, [[262, 55, 5]], 1);
-  ridge('hill2', 1650, 88, 270, 210, 330, 21, [[168, 60, 9], [206, 90, 8]], 1.6); ridge('hill3', 2700, 70, 292, 300, 480, 33, [[160, 120, 7], [200, 170, 7]]);
-  ridge('hill3', 2500, -70, 75, 70, 300, 47);
-  // 苏堤：长堤、桃柳、石拱桥
-  const sx = z => -560 + 34 * Math.sin(z / 380), pts = []; for (let z = -950; z <= 650; z += 25) pts.push([sx(z), z]);
-  const bridges = [-610, -230, 170, 500];
-  for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1], zm = (a[1] + b[1]) / 2; if (bridges.some(q => Math.abs(q - zm) < 16)) continue; B.seg('far-su', 'farLand', [a[0], .1, a[1]], [b[0], .1, b[1]], 34, 1.6, 1); B.seg('far-su', 'stone', [a[0], -.2, a[1]], [b[0], -.2, b[1]], 35.5, 1.4, .85); }
-  for (let z = -940; z <= 640; z += 11) { if (bridges.some(q => Math.abs(q - z) < 22)) continue; [-11, 11].forEach((o, j) => { const pk = (Math.round(z / 11) + j) % 3 === 0; blob('far-su', pk ? 'farPeach' : 'farTree', sx(z) + o + rr(-2, 2), pk ? 4.6 : 6.6, z + rr(-3, 3), pk ? 4 : 5.6, pk ? 3.4 : 5.4, pk ? 4 : 5.6, rr(.86, 1.1), 0, 0); }); }
-  bridges.forEach(zb => { const L = 26, R = 7.4, yc = -1.2, top = s => .9 + 6.6 * Math.pow(Math.cos(PI * s / (2 * L)), 2), sh = new THREE.Shape(); sh.moveTo(-L, -2); sh.lineTo(-L, .9); for (let i = 1; i <= 30; i++) { const s = -L + 2 * L * i / 30; sh.lineTo(s, top(s)); } sh.lineTo(L, -2); sh.closePath();
-    const hp = new THREE.Path(); hp.moveTo(-R, -1.9); hp.lineTo(-R, yc); hp.absarc(0, yc, R, PI, 0, true); hp.lineTo(R, -1.9); hp.closePath(); sh.holes.push(hp);
-    B.add('far-su', 'stone', new THREE.ExtrudeGeometry(sh, { depth: 12, bevelEnabled: false, curveSegments: 20 }), TM(sx(zb) + 6, 0, zb, -PI / 2), .95); });
-  for (let z = -900; z <= 620; z += 36) addGlow(sx(z) + 14, 4.5, z, 0xffc888, 9);
+  // 南山在苏堤以西向外退开，让出西里湖
+  FARPOS.southH = ridge('hill1', 780, 96, 172, 95, 150, 3, [], 1, { step: .4, near: 1, slope: 540, Rf: ad => sstep(108, 138, ad) * 240 });
+  const northH = FARPOS.northH = ridge('hill1', 1080, 236, 300, 105, 190, 11, [[262, 55, 5]], 1, { step: .35, near: 1, slope: 500 });
+  ridge('hill2', 1650, 88, 270, 210, 330, 21, [[168, 60, 9], [206, 90, 8]], 1.6, { step: .55, bump: 9, rows: 26 }); ridge('hill3', 2700, 70, 292, 300, 480, 33, [[160, 120, 7], [200, 170, 7]], 0, { step: .8, bump: 12, rows: 18 });
+  ridge('hill3', 2500, -70, 75, 70, 300, 47, [], 0, { step: .9, bump: 8, rows: 16 });
+  // 苏堤：长堤卧波，六桥（自北而南：跨虹、东浦、压堤、望山、锁澜、映波），桃柳相间
+  const bridges = SU_BRIDGES, pts = []; for (let z = -790; z <= 650; z += 20) pts.push([suX(z), z]);
+  let run = []; const BL = 27, flushRun = () => { if (run.length > 1) causeway('far-su', run, 30); run = []; };
+  for (let z = -790; z <= 650; z += 10) { const b = bridges.find(q => Math.abs(q - z) < BL - 1.5); if (b != null) { if (run.length) { run.push([suX(b - BL + 1.5), b - BL + 1.5]); flushRun(); } continue; }
+    if (!run.length) { const pb = bridges.find(q => z - q > 0 && z - q < BL + 10); if (pb != null) run.push([suX(pb + BL - 1.5), pb + BL - 1.5]); } run.push([suX(z), z]); } flushRun();
+  bridges.forEach(zb => archSpan('far-su', suX(zb), zb, PI / 2 - Math.atan2(suX(zb + 5) - suX(zb - 5), 10) * 0 , 27, 13, 7.4, -1.2, 6.2));
+  for (let z = -780; z <= 640; z += 9.5) { if (bridges.some(q => Math.abs(q - z) < 30)) continue; [-11.5, 11.5].forEach((o, j) => { const pk = (Math.round(z / 9.5) + j) % 3 === 0; if (pk) tree('peach', suX(z) + o + rr(-1, 1), z + rr(-2, 2), 'far-su', 1.15); else willowLite('far-su', suX(z) + o + rr(-1, 1), z + rr(-2, 2), 1.05); }); }
+  for (let z = -776, c = 0; z <= 636; z += 13, c++) { if (bridges.some(q => Math.abs(q - z) < 32)) continue; treeFar('far-su', ['camphor', 'plane', 'camphor', 'ginkgo'][c % 4], suX(z) + (c % 2 ? 6.5 : -6.5) + rr(-.8, .8), Y0, z + rr(-2, 2), rr(.82, 1.05)); }
+  for (let z = -770; z <= 630; z += 36) { if (bridges.some(q => Math.abs(q - z) < 26)) continue; lampPost('far-su', suX(z) + 4.2, Y0, z); }
   // 雷峰塔（夕照山上，八面五层）
   const lx = -330, lz = 560, lh = 46;
-  B.add('far-hill', 'hill1', new THREE.SphereGeometry(1, 28, 12, 0, TAU, 0, PI / 2), TM(lx, 0, lz + 20, 0, 150, lh + 2, 130), .95);
-  for (let i = 0; i < 150; i++) { const a = rnd() * TAU, r = Math.sqrt(rnd()) * 142, hh = (lh + 2) * Math.sqrt(Math.max(1 - Math.pow(r / 150, 2) * (Math.cos(a) * Math.cos(a) + Math.sin(a) * Math.sin(a) * 1.33), 0)); if (r < 26) continue; blob('far-hill', 'farTree', lx + Math.cos(a) * r, hh + 3, lz + 20 + Math.sin(a) * r * .87, rr(11, 17), rr(8, 13), rr(11, 17), rr(.72, 1.0), 0, 1); }
-  let y = lh - 3; B.add('far-leifeng', 'stone', new THREE.CylinderGeometry(19, 21, 9, 8), TM(lx, y + 4.5, lz), .9); y += 9;
+  const lf = hillField('far-hill', 'hill1', lx, lz + 20, 150, 130, lh + 2, 5, 80, 70, .4);
+  for (let i = 0; i < 300; i++) { const a = rnd() * TAU, r = Math.sqrt(rnd()) * .96, x = lx + Math.cos(a) * r * 150, z = lz + 20 + Math.sin(a) * r * 130; if (Math.hypot(x - lx, z - lz) < 24) continue; treeFar('far-hill', ['camphor', 'plane', 'camphor', 'maple', 'ginkgo', 'camphor'][i % 6], x, lf(x, z) - .8, z, rr(.85, 1.3)); }
+  let y = lf(lx, lz) - 6; B.add('far-leifeng', 'stone', new THREE.CylinderGeometry(19, 21, 9, 8), TM(lx, y + 4.5, lz), .9); y += 9;
   for (let i = 0; i < 5; i++) { const rb = 9.6 - i * .95, hb = 9.2 - i * .5; B.add('far-leifeng', 'pagoda', new THREE.CylinderGeometry(rb * .96, rb, hb, 8), TM(lx, y + hb / 2, lz, PI / 8), 1.15);
     B.add('far-leifeng', 'pagoda', new THREE.CylinderGeometry(rb + 2.4, rb + 2.4, .5, 8), TM(lx, y + .3, lz, PI / 8), .8);
     farRoof(lx, y + hb - 1.2, lz, rb * .9, rb + 4.6, 2.6, .55); y += hb; }
@@ -1099,9 +1213,9 @@ function buildFar() {
   // 保俶塔（宝石山上，六面七层实心砖塔）
   const bh = northH(262), ba = bh[0], bx = Math.cos(ba) * (bh[2] - 3), bz = Math.sin(ba) * (bh[2] - 3), by = bh[1] - 2.5; let yy = by;
   for (let i = 0; i < 7; i++) { const r0 = 5.2 - i * .55, hh = 5.6 - i * .25; B.add('far-baochu', 'brick', new THREE.CylinderGeometry(r0 - .5, r0, hh, 6), TM(bx, yy + hh / 2, bz)); B.add('far-baochu', 'brick', new THREE.CylinderGeometry(r0 + .5, r0 + .1, .5, 6), TM(bx, yy + hh, bz), .8); yy += hh; }
-  B.add('far-baochu', 'metal', new THREE.CylinderGeometry(.12, .8, 10, 6), TM(bx, yy + 5, bz)); addGlow(bx, by + 22, bz, 0xffe2b0, 70);
+  B.add('far-baochu', 'metal', new THREE.CylinderGeometry(.12, .8, 10, 6), TM(bx, yy + 5, bz)); FARPOS.baochu = [bx, by, bz]; addGlow(bx, by + 22, bz, 0xffe2b0, 70);
   // 三潭石塔：球形塔身中空，五个圆孔
-  [[-84, 30], [-108, 54], [-82, 76]].forEach(p => { const x = p[0], z = p[1];
+  SANTAN.forEach(p => { const x = p[0], z = p[1];
     B.add('santan', 'stone', new THREE.CylinderGeometry(.34, .42, 3.0, 10), TM(x, -.9, z), .86); B.add('santan', 'stone', new THREE.CylinderGeometry(.62, .5, .14, 12), TM(x, .66, z));
     B.add('santan', 'stone', new THREE.SphereGeometry(.52, 16, 12), TM(x, 1.16, z)); for (let i = 0; i < 5; i++) { const a = i * TAU / 5; B.add('santan', 'candle', new THREE.CircleGeometry(.15, 12), TM(x + Math.sin(a) * .525, 1.18, z + Math.cos(a) * .525, a)); }
     B.add('santan', 'stone', new THREE.ConeGeometry(.6, .34, 6), TM(x, 1.82, z)); B.add('santan', 'stone', new THREE.SphereGeometry(.17, 8, 6), TM(x, 2.08, z)); B.add('santan', 'stone', new THREE.SphereGeometry(.11, 8, 6), TM(x, 2.3, z)); B.add('santan', 'stone', new THREE.ConeGeometry(.06, .22, 6), TM(x, 2.47, z));
@@ -1111,6 +1225,151 @@ function farRoof(cx, cy, cz, rTop, rEave, h, tint) {
   const o = { sides: 8, rTop, rEave, h, sag: .2, lift: h * .28, flare: 0, cx, cy, cz, rot: PI / 8 }, pos = [];
   for (let k = 0; k < 8; k++) for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) { const a = roofPt(o, k, j - 1, i / 3), b = roofPt(o, k, j, i / 3), c = roofPt(o, k, j - 1, (i + 1) / 3), d = roofPt(o, k, j, (i + 1) / 3); pos.push(...a, ...b, ...c, ...b, ...d, ...c, ...a, ...c, ...b, ...b, ...c, ...d); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); B.add('far-leifeng', 'pagoda', g, null, tint);
+}
+
+// ───────── 045 lake：环湖造景——白堤断桥、孤山、三岛、净慈寺、北山街、城市天际线、湖上游船 ─────────
+MD.wallYel = { dt: 'plaster', bump: .003, c: 0xd7a744, t: 'p', snow: .8, jit: .03 };
+
+function ringPts(cx, cz, rx, rz, n, wob = 0, seed = 1) { const o = []; for (let i = 0; i < n; i++) { const a = i / n * TAU, k = 1 + wob * (fbm(Math.cos(a) * 1.6 + seed, Math.sin(a) * 1.6 + seed, 2) - .5); o.push([cx + Math.cos(a) * rx * k, cz + Math.sin(a) * rz * k]); } return o; }
+function stoneEdge(part, ring, closed = true) { const n = ring.length; for (let i = 0; i < (closed ? n : n - 1); i++) { const a = ring[i], b = ring[(i + 1) % n]; B.seg(part, 'stone', [a[0], -.9, a[1]], [b[0], -.9, b[1]], .7, 2.8, rr(.78, .9)); B.seg(part, 'stone', [a[0], Y0 - .04, a[1]], [b[0], Y0 - .04, b[1]], .8, .18); } }
+// 岛：草面 + 石驳岸，可带内湖
+function isle(part, pts, holes = []) {
+  const sh = new THREE.Shape(); pts.forEach((p, i) => i ? sh.lineTo(p[0], -p[1]) : sh.moveTo(p[0], -p[1])); sh.closePath();
+  holes.forEach(h => { const hp = new THREE.Path(); h.forEach((p, i) => i ? hp.lineTo(p[0], -p[1]) : hp.moveTo(p[0], -p[1])); hp.closePath(); sh.holes.push(hp); });
+  const g = new THREE.ShapeGeometry(sh); g.rotateX(-PI / 2); g.translate(0, Y0, 0); B.add(part, 'lawn', g, null, 1); stoneEdge(part, pts); holes.forEach(h => stoneEdge(part, h));
+}
+function quadUp(part, mat, a, b, c, d, tint) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([].concat(a, b, c, b, d, c, a, c, b, b, c, d), 3)); g.computeVertexNormals(); B.add(part, mat, g, null, tint); }
+// 堤：草面、中间石板路、两侧条石驳岸
+function causeway(part, pts, w) {
+  const L = offsetPoly(pts, w / 2), R = offsetPoly(pts, -w / 2), l2 = offsetPoly(pts, w * .16), r2 = offsetPoly(pts, -w * .16);
+  for (let i = 0; i < pts.length - 1; i++) { quadUp(part, 'lawn', [L[i][0], Y0, L[i][1]], [R[i][0], Y0, R[i][1]], [L[i + 1][0], Y0, L[i + 1][1]], [R[i + 1][0], Y0, R[i + 1][1]], 1);
+    quadUp(part, 'slab', [l2[i][0], Y0 + .03, l2[i][1]], [r2[i][0], Y0 + .03, r2[i][1]], [l2[i + 1][0], Y0 + .03, l2[i + 1][1]], [r2[i + 1][0], Y0 + .03, r2[i + 1][1]], rr(1.04, 1.12)); }
+  stoneEdge(part, L, false); stoneEdge(part, R, false);
+}
+// 单孔石拱桥：沿 ang 方向，半长 L、宽 W、拱半径 R
+function archSpan(part, cx, cz, ang, L, W, R, yc, rise) {
+  const top = s => Y0 + rise * Math.pow(Math.cos(PI * s / (2 * L)), 2), sh = new THREE.Shape(); sh.moveTo(-L, -2.3); sh.lineTo(-L, Y0); for (let i = 1; i <= 36; i++) { const s = -L + 2 * L * i / 36; sh.lineTo(s, top(s)); } sh.lineTo(L, -2.3); sh.closePath();
+  const hp = new THREE.Path(); hp.moveTo(-R, -2.2); hp.lineTo(-R, yc); hp.absarc(0, yc, R, PI, 0, true); hp.lineTo(R, -2.2); hp.closePath(); sh.holes.push(hp);
+  const dx = Math.cos(ang), dz = Math.sin(ang), px = -dz, pz = dx;
+  B.add(part, 'stone', new THREE.ExtrudeGeometry(sh, { depth: W, bevelEnabled: false, curveSegments: 24 }), TM(cx - px * W / 2, 0, cz - pz * W / 2, -ang), .92);
+  const P = (s, o, y) => [cx + dx * s + px * o, y, cz + dz * s + pz * o];
+  for (let i = 0; i < 22; i++) { const s0 = -L + 2 * L * i / 22, s1 = s0 + 2 * L / 22; B.seg(part, 'slab', P(s0, 0, top(s0) + .04), P(s1, 0, top(s1) + .04), W - .9, .1);
+    [-1, 1].forEach(sd => B.seg(part, 'stone', P(s0, sd * (W / 2 - .14), top(s0) + .02), P(s1, sd * (W / 2 - .14), top(s1) + .02), .5, .16, rr(.92, 1.02))); }
+  [-1, 1].forEach(sd => { const ln = []; for (let i = 0; i <= 8; i++) { const q = P(-L + .4 + (2 * L - .8) * i / 8, sd * (W / 2 - .3), 0); ln.push([q[0], q[2]]); } stoneRail(part, ln, p => top((p[0] - cx) * dx + (p[1] - cz) * dz) + .08, 2.4); });
+  [-1, 1].forEach(sd => { for (let a = 12; a <= 168; a += 6.5) { const c = Math.cos(a * PI / 180), s = Math.sin(a * PI / 180); B.seg(part, 'stone', P((R + .07) * c, sd * (W / 2 + .03), yc + (R + .07) * s), P((R + .78) * c, sd * (W / 2 + .03), yc + (R + .78) * s), .1, .74, rr(.94, 1.1)); } });
+}
+// 攒尖亭：台基踏步、柱、额枋挂落、美人靠、攒尖瓦顶与宝顶
+function pavLite(part, cx, cz, y, r, sides = 4, tiers = 1, rot = 0) {
+  const pr = sides === 4 ? PI / 4 + rot : rot, ps = sides === 4 ? 4 : sides * 2;
+  B.add(part, 'stone', new THREE.CylinderGeometry(r * 1.74, r * 1.8, .22, ps), TM(cx, y + .11, cz, pr), .86); B.add(part, 'stone', new THREE.CylinderGeometry(r * 1.55, r * 1.6, .5, ps), TM(cx, y + .25, cz, pr)); B.add(part, 'slab', new THREE.CylinderGeometry(r * 1.46, r * 1.46, .04, ps), TM(cx, y + .51, cz, pr), 1.08);
+  const H = Math.max(3, r * .95), rc = r / Math.cos(PI / sides), col = [], cr = Math.max(.13, r * .045), yf = y + .5, yb = yf + H - .12;
+  for (let i = 0; i < sides; i++) { const a = (i + .5) * TAU / sides + rot; col.push([cx + Math.sin(a) * rc, cz + Math.cos(a) * rc]); column(part, col[i][0], col[i][1], yf, yf + H, cr); }
+  for (let i = 0; i < sides; i++) { const a = col[i], b = col[(i + 1) % sides], mx = (a[0] + b[0]) / 2 - cx, mz = (a[1] + b[1]) / 2 - cz, ml = Math.hypot(mx, mz) || 1;
+    B.seg(part, 'woodDk', [a[0], yb, a[1]], [b[0], yb, b[1]], .2, .26); B.seg(part, 'wood', [a[0], yb - .3, a[1]], [b[0], yb - .3, b[1]], .12, .14, .9); guaLuo(part, a, b, yb - .38, .42);
+    if (i === 0) { for (let k = 0; k < 3; k++) B.seg(part, 'stone', [a[0] + mx / ml * (.75 + k * .32), y + .42 - k * .16, a[1] + mz / ml * (.75 + k * .32)], [b[0] + mx / ml * (.75 + k * .32), y + .42 - k * .16, b[1] + mz / ml * (.75 + k * .32)], .34, .17, .95 - k * .03); }
+    else meiRenKao(part, a, b, yf, mx / ml, mz / ml); }
+  buildRoof(part, part, { sides, rTop: tiers > 1 ? r * .55 : .12, rEave: r * 1.55, h: tiers > 1 ? r * .42 : r * .8, sag: .18, lift: r * .26, flare: r * .1, cx, cy: y + .42 + H, cz, rot }, { sp: .44, nu: 9, nt: 7 });
+  let ty = y + .42 + H + (tiers > 1 ? r * .42 : r * .8);
+  if (tiers > 1) { B.add(part, 'wood', new THREE.CylinderGeometry(r * .5, r * .5, r * .32, sides), TM(cx, ty + r * .14, cz, pr)); B.add(part, 'lampGl', new THREE.CylinderGeometry(r * .505, r * .505, r * .16, sides), TM(cx, ty + r * .16, cz, pr)); buildRoof(part, part, { sides, rTop: .1, rEave: r * .95, h: r * .62, sag: .2, lift: r * .2, flare: r * .08, cx, cy: ty + r * .28, cz, rot }, { sp: .44, nu: 7, nt: 6 }); ty += r * .9; }
+  B.add(part, 'ridge', lathe([[0, 0], [.3, 0], [.32, .1], [.16, .22], [.26, .4], [.2, .6], [.06, .76], [0, .95]], 12), TM(cx, ty - .05, cz, 0, r * .28, r * .3, r * .28), 1.4);
+  addGlow(cx, y + H * .8, cz, 0xffb968, r * 1.3);
+}
+// 殿堂：须弥台基与踏步、前后檐廊、槅扇门、槛窗、额枋雀替、檐下斗栱、四坡瓦顶、正脊鸱吻、匾额与灯笼
+function hallLite(part, cx, cz, y, hx, hz, rot = 0, wall = 'plaster', h = 3.6, roof = null, tiers = 1, lod = 1) {
+  const c = Math.cos(rot), s = Math.sin(rot), W = (lx, lz) => [cx + lx * c + lz * s, cz - lx * s + lz * c], P = (lx, ly, lz) => { const p = W(lx, lz); return [p[0], y + ly, p[1]]; };
+  const bx = (mat, lx, ly, lz, sx, sy, sz, tint) => { const p = W(lx, lz); B.box(part, mat, p[0], y + ly, p[1], sx, sy, sz, rot, tint); }, yf = .5, yt = yf + h, vz = hz + .9;
+  bx('stone', 0, .09, 0, hx * 2 + 3.5, .18, hz * 2 + 3.5, .84); bx('stone', 0, .25, 0, hx * 2 + 2.8, .5, hz * 2 + 2.8, .97); bx('stone', 0, .47, 0, hx * 2 + 3, .07, hz * 2 + 3, 1.05); bx('slab', 0, .515, 0, hx * 2 + 2.5, .04, hz * 2 + 2.5, 1.08);
+  for (const sz of [-1, 1]) for (let k = 0; k < 3; k++) { bx('stone', 0, .42 - k * .16, sz * (hz + 1.55 + k * .32), Math.min(hx * .9, 4.6), .17, .34, .96 - k * .03); if (!k) [-1, 1].forEach(e => bx('stone', e * (Math.min(hx * .9, 4.6) / 2 + .16), .3, sz * (hz + 1.86), .26, .46, 1.0, .9)); }
+  bx(wall, 0, yf + h / 2, 0, hx * 2, h, hz * 2, 1); bx('stone', 0, yf + .2, 0, hx * 2 + .06, .4, hz * 2 + .06, .9);
+  const n = Math.max(3, Math.round(hx * 2 / 3) | 1), bw = hx * 2 / n, mid = (n - 1) / 2;
+  for (const sz of [-1, 1]) {
+    for (let i = 0; i <= n; i++) { const lx = -hx + i * bw; const p = W(lx, sz * vz); column(part, p[0], p[1], y + yf, y + yt, .16);
+      if (i < n) { B.seg(part, 'woodDk', P(lx + .16, yt - .52, sz * vz), P(lx + .7, yt - .3, sz * vz), .07, .07); B.seg(part, 'woodDk', P(lx + bw - .16, yt - .52, sz * vz), P(lx + bw - .7, yt - .3, sz * vz), .07, .07); } }
+    B.seg(part, 'woodDk', P(-hx - .2, yt - .1, sz * vz), P(hx + .2, yt - .1, sz * vz), .22, .28); B.seg(part, 'wood', P(-hx, yt - .38, sz * vz), P(hx, yt - .38, sz * vz), .13, .16, .9);
+    if (lod) for (let lx = -hx; lx <= hx + .01; lx += bw / 3) { bx('woodDk', lx, yt + .1, sz * (vz + .22), .16, .12, .6, .9); bx('wood', lx, yt + .2, sz * (vz + .34), .34, .1, .14, .85); }       // 斗栱
+    const zf = sz * (hz + .03), y0 = yf + .05, hd = h * .76;
+    for (let i = 0; i < n; i++) { const l0 = -hx + i * bw + .2, l1 = l0 + bw - .4;
+      if (i === mid) { const nl = 4, lw = (l1 - l0) / nl;                              // 明间四扇槅扇门
+        for (let k = 0; k < nl; k++) { const a = l0 + k * lw + .03, b = a + lw - .06, m = (a + b) / 2;
+          bx('wood', m, y0 + hd * .19, zf, b - a, hd * .38, .07, .92); bx('lampGl', m, y0 + hd * .69, zf, b - a - .1, hd * .56, .03, 1); bx('woodDk', m, y0 + hd * .4, zf + sz * .01, b - a, .07, .08); bx('woodDk', m, y0 + hd * .98, zf, b - a, .07, .08);
+          [a, b].forEach(e => bx('woodDk', e, y0 + hd / 2, zf + sz * .01, .06, hd, .08)); if (lod) { for (let q = 1; q < 3; q++) bx('woodDk', lerp(a, b, q / 3), y0 + hd * .69, zf + sz * .025, .03, hd * .56, .03); for (let q = 1; q < 5; q++) bx('woodDk', m, y0 + hd * (.41 + q * .112), zf + sz * .025, b - a - .1, .03, .03); } }
+        bx('plaque', 0, yt - .78, sz * (hz + .12), Math.min(2.4, bw * .6), .62, .08, 1); bx('gold', 0, yt - .78, sz * (hz + .17), Math.min(2.4, bw * .6) * .7, .26, .02, 1);
+        [-1, 1].forEach(e => { const p = W(e * (bw / 2 - .1), sz * (vz - .28)); lantern(part, p[0], y + yt - 1.15, p[1], false); }); }
+      else { const m = (l0 + l1) / 2, ys = yf + h * .3, hw = h * .44;                                                        // 次间槛墙 + 槛窗
+        bx('lampGl', m, ys + hw / 2, zf, l1 - l0 - .1, hw, .03, 1); [[m, ys, l1 - l0, .09], [m, ys + hw, l1 - l0, .09]].forEach(q => bx('woodDk', q[0], q[1], zf + sz * .02, q[2], q[3], .09)); [l0, l1].forEach(e => bx('woodDk', e, ys + hw / 2, zf + sz * .02, .08, hw, .09));
+        const nv = Math.max(3, Math.round((l1 - l0) / (lod ? .34 : .8))); for (let q = 1; q < nv; q++) bx('woodDk', lerp(l0, l1, q / nv), ys + hw / 2, zf + sz * .035, .03, hw, .03); for (let q = 1; q < 4; q++) bx('woodDk', m, ys + hw * q / 4, zf + sz * .035, l1 - l0, .03, .03); }
+      bx('woodDk', -hx + (i + .5) * bw, yf + hd + .16, zf, bw - .3, .1, .08); }
+  }
+  for (const sx of [-1, 1]) { [-hz, hz].forEach(lz => { const p = W(sx * hx, lz); column(part, p[0], p[1], y + yf, y + yt, .15); }); bx('woodDk', sx * (hx + .03), yt - .12, 0, .1, .22, hz * 2); bx('woodDk', sx * (hx + .03), yf + h * .52, 0, .08, .1, hz * 2);
+    const ww = Math.min(1.5, hz * .7); bx('lampGl', sx * (hx + .02), yf + h * .7, 0, .03, ww * .7, ww, 1); for (let q = 0; q <= 4; q++) bx('woodDk', sx * (hx + .04), yf + h * .7, -ww / 2 + q * ww / 4, .04, ww * .7, q % 4 ? .03 : .07); for (let q = 0; q <= 2; q++) bx('woodDk', sx * (hx + .04), yf + h * .7 - ww * .35 + q * ww * .35, 0, .04, q % 2 ? .03 : .07, ww); }
+  const o = { rect: 1, x0: hx * .5, z0: .15, x1: hx + 2.1, z1: hz + 2.1, h: h * .52, sag: .17, lift: .75, flare: .32, cx, cy: y + .46 + h, cz, rot };
+  buildRoof(part, part, o, lod ? { sp: .46, nu: 9, nt: 5 } : { sp: 1.2, nu: 6, nt: 4 }); let ty = .46 + h + h * .52;
+  if (tiers > 1) { bx(wall, 0, ty + h * .16, 0, hx * 1.05, h * .5, hz * 1.05, 1); for (const sz of [-1, 1]) { bx('lampGl', 0, ty + h * .2, sz * (hz * .525 + .02), hx * .9, h * .2, .03, 1); for (let q = 0; q <= 8; q++) bx('woodDk', -hx * .45 + q * hx * .9 / 8, ty + h * .2, sz * (hz * .525 + .04), q % 8 ? .04 : .1, h * .22, .04); }
+    buildRoof(part, part, { rect: 1, x0: hx * .3, z0: .12, x1: hx * .52 + 1.6, z1: hz * .52 + 1.6, h: h * .45, sag: .18, lift: .65, flare: .28, cx, cy: y + ty + h * .38, cz, rot }, lod ? { sp: .46, nu: 8, nt: 5 } : { sp: 1.2, nu: 6, nt: 4 }); ty += h * .83; o.x0 = hx * .3; }
+  B.seg(part, 'ridge', P(-o.x0 - .25, ty + .14, 0), P(o.x0 + .25, ty + .14, 0), .28, .4, .95); B.seg(part, 'ridge', P(-o.x0 - .3, ty + .38, 0), P(o.x0 + .3, ty + .38, 0), .14, .1, 1.15);
+  [-1, 1].forEach(e => { const x0 = e * (o.x0 + .2); B.seg(part, 'ridge', P(x0, ty + .2, 0), P(x0 + e * .32, ty + .72, 0), .2, .3, 1); B.seg(part, 'ridge', P(x0 + e * .32, ty + .72, 0), P(x0 + e * .06, ty + 1.02, 0), .14, .2, 1.1); });
+  { const p = W(0, 0); B.add(part, 'ridge', lathe([[0, 0], [.22, 0], [.24, .1], [.1, .2], [.2, .36], [.14, .52], [.04, .62], [0, .74]], 10), TM(p[0], y + ty + .4, p[1]), 1.3); }
+  const g = W(0, hz + 2.2); addGlow(g[0], y + 2.6, g[1], 0xffb968, 3.4);
+}
+const mound = (x, z, cx, cz, rx, rz, h) => { const d = 1 - Math.pow((x - cx) / rx, 2) - Math.pow((z - cz) / rz, 2); return d > 0 ? h * Math.sqrt(d) : 0; };
+
+function buildLake() {
+  // —— 白堤、锦带桥、断桥 ——
+  const bai = [[-184, -561], [-150, -571], [-110, -585], [-70, -603], [-30, -622], [5, -638], [40, -653]], baiBr = [2, 5];
+  let run = []; bai.forEach((p, i) => { if (baiBr.includes(i)) { const q = bai[i - 1], n = bai[i + 1], l0 = Math.hypot(p[0] - q[0], p[1] - q[1]), l1 = Math.hypot(n[0] - p[0], n[1] - p[1]); run.push([lerp(p[0], q[0], 23 / l0), lerp(p[1], q[1], 23 / l0)]); causeway('bai', run, 15); run = [[lerp(p[0], n[0], 23 / l1), lerp(p[1], n[1], 23 / l1)]]; archSpan('bai', p[0], p[1], Math.atan2(n[1] - q[1], n[0] - q[0]), 24, 14, 8, -1.6, i === 5 ? 6.4 : 5.2); } else run.push(p); }); causeway('bai', run, 15);
+  for (let i = 0; i < bai.length - 1; i++) { const a = bai[i], b = bai[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1]) / l, nz = (b[0] - a[0]) / l; let k = 0;
+    for (let s = 5; s < l; s += 8.5, k++) { const x = lerp(a[0], b[0], s / l), z = lerp(a[1], b[1], s / l); if (baiBr.some(j => Math.hypot(x - bai[j][0], z - bai[j][1]) < 27)) continue; [-5.6, 5.6].forEach((o, j) => (k + j) % 2 ? tree('peach', x + nx * o, z + nz * o, 'bai', 1.05) : willowLite('bai', x + nx * o, z + nz * o, .95)); if (k % 3 === 0) lampPost('bai', x + nx * 2.9, Y0, z + nz * 2.9); } }
+  pavLite('bai', 49, -648, Y0, 3.4, 4, 1, .4);                                   // 断桥东堍的碑亭
+  // —— 孤山：湖中最大的岛，山不高而清幽 ——
+  const G = { x: -330, z: -560, rx: 150, rz: 46 }; isle('gushan', ringPts(G.x, G.z, G.rx, G.rz, 56, .16, 3));
+  const gh = hillField('gushan', 'hill1', -345, -568, 122, 33, 24, 2, 96, 30, Y0, 1.05, .8);
+  for (let i = 0; i < 230; i++) { const a = rnd() * TAU, r = Math.sqrt(rnd()) * .97, x = -345 + Math.cos(a) * r * 116, z = -568 + Math.sin(a) * r * 30, K = ['camphor', 'plane', 'camphor', 'ginkgo', 'maple', 'camphor'][i % 6]; if (z > -568 || i % 3 === 0) treeLite(K, x, z, rr(.8, 1.15), 'gushan', gh(x, z) - 1.2, 11); else treeFar('gushan', K, x, gh(x, z) - 1.5, z, rr(.85, 1.2)); }
+  for (let i = 0; i < 22; i++) { const a = rnd() * TAU, r = rr(.55, .98), x = -345 + Math.cos(a) * r * 116, z = -566 + Math.sin(a) * r * 29, q = rr(1.2, 2.6); blob('gushan', 'rock', x, gh(x, z) + q * .25, z, q, q * rr(.5, .8), q * rr(.7, 1.1), rr(.85, 1.05), 0, 1); }
+  for (let i = 0; i < 26; i++) { const a = i / 26 * TAU; willowLite('gushan', G.x + Math.cos(a) * (G.rx - 6), G.z + Math.sin(a) * (G.rz - 5), 1); }
+  [[-262, -596], [-250, -590], [-272, -590], [-244, -598], [-280, -598], [-258, -584]].forEach(p => tree('plum', p[0], p[1], 'gushan', 1.2));   // 放鹤亭畔的梅林
+  hallLite('gushan', -300, -522, Y0, 9, 4.6, 0, 'plaster', 4.2, null, 2); hallLite('gushan', -352, -520, Y0, 7, 4, .05); hallLite('gushan', -404, -524, Y0, 8, 4.2, -.06, 'plaster', 3.8);
+  pavLite('gushan', -256, -596, Y0, 3.2, 4, 1, 0); pavLite('gushan', -440, -556, gh(-440, -556), 2.8, 6, 1);
+  // 平湖秋月：孤山东南角伸入湖中的平台
+  B.box('gushan', 'stone', -176, -.9, -548, 26, 2.9, 15, .12, .86); for (let i = 0; i < 12; i++) for (let j = 0; j < 7; j++) { const lx = -11.8 + i * 2.15, lz = -6.4 + j * 2.13; B.box('gushan', 'slab', -176 + lx * Math.cos(.12) + lz * Math.sin(.12), Y0 + .02, -548 - lx * Math.sin(.12) + lz * Math.cos(.12), 2.1, .1, 2.08, .12); }
+  hallLite('gushan', -180, -552, Y0, 6.5, 3.4, .12, 'plaster', 3.6); pavLite('gushan', -164, -543, Y0, 2.6, 4, 1, .12);
+  // 西泠桥：孤山西端连到苏堤北头
+  { const w = [[-478, -565], [-520, -577], [-548, -585], [-586, -598]], m = w[1], q = w[0], n = w[2]; causeway('gushan', [q, [lerp(m[0], q[0], .5), lerp(m[1], q[1], .5)]], 12); archSpan('gushan', m[0], m[1], Math.atan2(n[1] - q[1], n[0] - q[0]), 21, 11, 7, -1.4, 5); causeway('gushan', [[lerp(m[0], n[0], .75), lerp(m[1], n[1], .75)], n, w[3]], 12); }
+  // —— 小瀛洲：湖中有岛，岛中有湖 ——
+  const X = { x: -215, z: 42 }, arc = (r, a0, a1, n) => { const o = []; for (let i = 0; i <= n; i++) { const a = lerp(a0, a1, i / n); o.push([X.x + Math.cos(a) * r, X.z + Math.sin(a) * r]); } return o; };
+  const half = (a0, a1) => arc(37, a0, a1, 18).concat(arc(11, a1, a0, 10));
+  isle('xiaoying', ringPts(X.x, X.z, 50, 50, 48, .05, 9), [half(.11, PI - .11), half(PI + .11, TAU - .11)]);
+  for (let i = 0; i < 30; i++) { const a = i / 30 * TAU; (i % 3 ? willowLite : (p, x, z) => treeLite(i % 2 ? 'camphor' : 'maple', x, z, .62, p, Y0, 8))('xiaoying', X.x + Math.cos(a) * 44, X.z + Math.sin(a) * 44, .95); }
+  for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + .5; treeLite('camphor', X.x + Math.cos(a) * 6, X.z + Math.sin(a) * 6, .55, 'xiaoying', Y0, 8); }
+  hallLite('xiaoying', X.x, X.z, Y0, 5.5, 3.2, 0, 'plaster', 3.4);
+  [[-1, 1], [1, 1]].forEach(d => { const zz = [[0, 11], [3, 17], [-3, 23], [3, 29], [0, 36.5]].map(p => [X.x + p[0], X.z + d[0] * p[1]]); for (let i = 0; i < zz.length - 1; i++) { B.seg('xiaoying', 'slab', [zz[i][0], Y0 + .02, zz[i][1]], [zz[i + 1][0], Y0 + .02, zz[i + 1][1]], 2.4, .16); [-1, 1].forEach(sd => B.seg('xiaoying', 'stone', [zz[i][0] + sd * 1.1, Y0 + .4, zz[i][1]], [zz[i + 1][0] + sd * 1.1, Y0 + .4, zz[i + 1][1]], .14, .5)); B.box('xiaoying', 'stone', zz[i + 1][0], -.9, zz[i + 1][1], .5, 2.9, .5, 0, .8); } });
+  pavLite('xiaoying', X.x + 3, X.z - 20, Y0, 2.2, 3, 1, .3); pavLite('xiaoying', X.x, X.z + 46, Y0, 2.6, 4, 1, 0); pavLite('xiaoying', X.x - 44, X.z, Y0, 2.4, 6, 1);
+  // —— 湖心亭、阮公墩 ——
+  isle('huxin', ringPts(-300, -230, 30, 26, 30, .08, 5)); hallLite('huxin', -300, -231, Y0, 7, 4.4, 0, 'plaster', 4, null, 2); pavLite('huxin', -318, -224, Y0, 2.2, 4, 1, .3);
+  for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; (i % 2 ? willowLite('huxin', -300 + Math.cos(a) * 25, -230 + Math.sin(a) * 21, .9) : treeLite('camphor', -300 + Math.cos(a) * 23, -230 + Math.sin(a) * 19, .55, 'huxin', Y0, 8)); }
+  isle('huxin', ringPts(-410, -110, 22, 20, 24, .1, 7)); for (let i = 0; i < 14; i++) { const a = rnd() * TAU, r = Math.sqrt(rnd()) * 17; treeLite(i % 3 ? 'camphor' : 'ginkgo', -410 + Math.cos(a) * r, -110 + Math.sin(a) * r, .6, 'huxin', Y0, 8); } pavLite('huxin', -404, -98, Y0, 2, 6, 1);
+  // —— 净慈寺：南屏山下，黄墙殿宇，晚钟所在 ——
+  { const sh = FARPOS.southH(103), sr = sh[2] - 150 - 52, tx = Math.cos(sh[0]) * sr, tz = Math.sin(sh[0]) * sr, ty = 2.2; FARPOS.temple = [tx, tz]; B.box('temple', 'stone', tx, ty / 2 - .2, tz, 64, ty + .4, 74, 0, .88);
+    hallLite('temple', tx, tz - 24, ty, 8, 4, 0, 'wallYel', 3.6); hallLite('temple', tx, tz, ty, 12, 6.5, 0, 'wallYel', 5.2, null, 2); hallLite('temple', tx, tz + 25, ty, 9, 4.6, 0, 'wallYel', 4);
+    pavLite('temple', tx + 22, tz - 14, ty, 3.2, 4, 2, 0); pavLite('temple', tx - 22, tz - 14, ty, 3.2, 4, 2, 0);
+    [[-30, -35, 30, -35], [-30, 35, 30, 35], [-30, -35, -30, 35], [30, -35, 30, 35]].forEach(w => { B.seg('temple', 'wallYel', [tx + w[0], ty + 1.5, tz + w[1]], [tx + w[2], ty + 1.5, tz + w[3]], .4, 3, 1); B.seg('temple', 'tile', [tx + w[0], ty + 3.1, tz + w[1]], [tx + w[2], ty + 3.1, tz + w[3]], .9, .22, .9); });
+    for (let i = 0; i < 12; i++) treeLite(i % 2 ? 'camphor' : 'ginkgo', tx + (i % 2 ? -1 : 1) * rr(8, 26), tz + rr(-30, 30), .7, 'temple', ty, 9);
+    addGlow(tx, ty + 9, tz, 0xffb24a, 34); }
+  // —— 北山街：北岸山脚的一排老房子 ——
+  for (let i = 0; i < 13; i++) { const nh = FARPOS.northH(246 + i * 3.3), a = nh[0], R = nh[2] - 190 - 50 + (i % 2) * 12, x = Math.cos(a) * R, z = Math.sin(a) * R, rot = Math.atan2(x, -z) + PI / 2; B.box('north', 'stone', x, .9, z, 22, 2.6, 16, rot, .88); hallLite('north', x, z, 2.2, rr(5.5, 8), rr(3.4, 4.4), rot, 'plaster', rr(3.4, 5.6), null, i % 4 === 1 ? 2 : 1, 0); treeLite(i % 2 ? 'plane' : 'camphor', x + Math.cos(a + .02) * 14, z + Math.sin(a + .02) * 14, .8, 'north', 2.2, 9); }
+  // —— 城东天际线：近低远高，入夜亮窗 ——
+  { const cr = mulberry(77), face = (lit) => canvasTex(128, 128, (c, w, h) => { c.fillStyle = lit ? '#000' : '#cfd2d0'; c.fillRect(0, 0, w, h);
+      for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) { const x = i * 32 + 5, y2 = j * 32 + 8; if (lit) { if (cr() < .38) { c.fillStyle = cr() < .7 ? '#ffd9a0' : '#d4e6ff'; c.fillRect(x, y2, 22, 17); } } else { const g = c.createLinearGradient(0, y2, 0, y2 + 17); g.addColorStop(0, '#6f8598'); g.addColorStop(1, '#93a7b6'); c.fillStyle = g; c.fillRect(x, y2, 22, 17); c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x + 10, y2, 1.5, 17); c.fillStyle = 'rgba(60,66,70,.35)'; c.fillRect(0, j * 32 + 28, w, 2); } } }, true);
+    const day = face(0), lit = face(1), bg = new THREE.BoxGeometry(1, 1, 1).translate(0, .5, 0), uv = bg.attributes.uv, nm = bg.attributes.normal; for (let i = 0; i < uv.count; i++) if (Math.abs(nm.getY(i)) > .5) uv.setXY(i, 0, 0);
+    const cm = new THREE.MeshLambertMaterial({ map: day, emissiveMap: lit, emissive: 0xffffff, emissiveIntensity: 0 });
+    cm.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_INSTANCING\nvUv=uv*vec2(max(1.,floor((abs(normal.x)>.5?length(instanceMatrix[2].xyz):length(instanceMatrix[0].xyz))/14.)),max(1.,floor(length(instanceMatrix[1].xyz)/13.)));\n#endif'); };
+    const n = 520, im = new THREE.InstancedMesh(bg, cm, n); let k = 0; const put = (x, y2, z, ry, w, h, d, v, warm) => { if (k >= n) return; im.setMatrixAt(k, _lm.compose(_p.set(x, y2, z), _q.setFromEuler(_e.set(0, ry, 0)), _s.set(w, h, d))); im.setColorAt(k, _lc.setRGB(v * (1 + warm * .06), v, v * (1 - warm * .08))); k++; };
+    for (let i = 0; i < 230; i++) { const x = rr(330, 1500), z = rr(-1000, 1000), far = (x - 330) / 1170, tall = rnd() < .3, h = rr(14, 30) + far * rr(10, 110) * (tall ? 1.6 : .7), w = rr(18, 42), d = w * rr(.7, 1.3), ry = rr(-.2, .2), v = rr(.78, 1), warm = rr(-1, 1);
+      put(x, Y0, z, ry, w, h, d, v, warm); put(x, Y0 + h, z, ry, w * .3, rr(3, 6), d * .4, v * .8, warm);
+      if (h > 48) { put(x, Y0 + h, z, ry, w * .72, h * rr(.12, .3), d * .72, v * 1.02, warm); put(x, Y0, z, ry, w * 1.5, rr(9, 15), d * 1.35, v * .92, warm); } }
+    im.count = k; im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; world.add(im); regMesh(im, 'city', null); WL.nightHooks.push(nt => cm.emissiveIntensity = nt * .95); }
+  // —— 湖上游船：摇橹船慢行，画舫两艘 ——
+  [[-150, -120, 60, 90, .2, .028], [-330, 40, 70, 50, 2.1, -.03], [-250, -330, 80, 60, 4, .024], [-420, 230, 50, 90, 1, -.026], [-130, 250, 60, 70, 3, .03], [-90, -330, 40, 70, 5.2, -.032], [-360, -400, 60, 40, .7, .028]].forEach(L => { buildBoat(0, 0, 0).loop = L; });
+  [[-260, -90, 150, 190, .9, .013], [-300, 180, 130, 120, 3.6, -.015]].forEach(L => { const b = buildBoat(0, 0, 0, 2.7); b.loop = L; b.sc = 2.7; });
 }
 
 // ───────── 05 state：四季、天光、天气、相机、主循环 ─────────
@@ -1160,7 +1419,7 @@ function applyEnv() {
   for (const m of MATS) { const u = m.userData, d = u.d;
     if (u.season) S4c(u.season, s, m.color); if (u.glow) m.emissive.copy(u.glow).multiplyScalar(night * d.gi); if (d.leaf) u.leafU.value = S4n(d.leaf, s); }
   let cs = 0; for (const e of MESHES) if (e.matId && MD[e.matId].leaf) { const c = e.mesh.material.userData.leafU.value > .3; e.mesh.castShadow = c; cs += c ? 1 : 0; } WL.castSig = cs;
-  glowU.uOn.value = night; poolMat.opacity = night * .5; for (const l of nightLights) l.intensity = night * l.userData.i;
+  glowU.uOn.value = night; poolMat.opacity = night * .5; for (const l of nightLights) l.intensity = night * l.userData.i; for (const h of WL.nightHooks) h(night);
   updateLotus(s);
 }
 function applyOpacity() {
@@ -1259,11 +1518,12 @@ function frame(dt) {
     if (sig !== WL.shSig || WL.shadowDirty) { WL.shSig = sig; WL.shadowDirty = false; renderer.shadowMap.needsUpdate = true; } }
   // 飘落物围绕视点
   camera.getWorldDirection(_fw); for (const k in FL) { const u = FL[k].userData.u; u.uC.value.copy(camera.position).addScaledVector(_fw, u.uBox.value.x * .36); if (k === 'fly') u.uC.value.y = 2.2; else u.uC.value.y = Math.max(u.uC.value.y, u.uBox.value.y * .42); FL[k].visible = u.uOp.value > .01; }
-  boats.forEach(b => { b.grp.position.y = Math.sin(t * .9 + b.ph) * .03; b.grp.rotation.z = Math.sin(t * .7 + b.ph) * .022; b.grp.rotation.x = Math.sin(t * .55 + b.ph * 2) * .012; });
+  boats.forEach(b => { if (b.loop) { const L = b.loop, a = L[4] + t * L[5], x = L[0] + Math.cos(a) * L[2], z = L[1] + Math.sin(a) * L[3]; b.grp.position.x = x; b.grp.position.z = z; b.grp.rotation.y = -Math.atan2(Math.cos(a) * L[3] * Math.sign(L[5]), -Math.sin(a) * L[2] * Math.sign(L[5])); if (glow) { const fx = Math.cos(b.grp.rotation.y), fz = -Math.sin(b.grp.rotation.y); glow.geometry.attributes.position.setXYZ(b.gi, x + fx * 1.52 * (b.sc || 1), 1.5 * (b.sc || 1), z + fz * 1.52 * (b.sc || 1)); glow.geometry.attributes.position.needsUpdate = true; } }
+    b.grp.position.y = Math.sin(t * .9 + b.ph) * .03; b.grp.rotation.z = Math.sin(t * .7 + b.ph) * .022; b.grp.rotation.x = Math.sin(t * .55 + b.ph * 2) * .012; });
   updateKoi(dt, t); updateLanterns(dt, t); ripGate();
   sky.position.copy(camera.position); water.position.set(camera.position.x, 0, camera.position.z); water.updateMatrixWorld();
   renderer.shadowMap.autoUpdate = false;
-  if (water.visible) renderReflection();
+  if (water.visible && (WL.film || !WL.reflHalf || (WL.reflN = (WL.reflN | 0) + 1) & 1)) renderReflection();   // 机器吃力时倒影隔帧更新
   renderer.render(scene, camera);
   if (WL.post) WL.post();
 }
@@ -1271,7 +1531,7 @@ let last = 0, slow = 0, acc = 0, nfr = 0;
 function loop(now) {
   requestAnimationFrame(loop); if (WL.film) return;
   const dt = Math.min((now - last) / 1000 || .016, .1); last = now; frame(dt);
-  acc += dt; nfr++; if (acc > 2) { const avg = acc / nfr; acc = 0; nfr = 0; if (avg > .045 && slow < 3) { slow++; if (PR > 1) PR = Math.max(1, PR * .75); else if (RS > .35) RS = .35; else renderer.shadowMap.enabled = false, MATS.forEach(m => m.needsUpdate = true); resize(); } }
+  acc += dt; nfr++; if (acc > 2) { const avg = acc / nfr; acc = 0; nfr = 0; if (avg > .045 && slow < 5) { slow++; if (PR > 1.3) PR = Math.max(1, PR * .75); else if (!WL.reflHalf) WL.reflHalf = 1; else if (PR > 1) PR = 1; else if (RS > .35) RS = .35; else renderer.shadowMap.enabled = false, MATS.forEach(m => m.needsUpdate = true); resize(); } }
 }
 
 // ───────── 06 ui：景观/构件/材质数据、交互、漫步、初始化 ─────────
@@ -1292,11 +1552,18 @@ const VIEWS = [
   { id: 'autumn', n: '秋色满堤', tag: '秋', p: [-30, 13, -44], l: [12, 5, -86], m: { s: 2, t: 0 }, txt: '银杏转金、槭叶转红、悬铃木转褐，香樟依旧浓绿。北山街与杨公堤的秋色，大抵如此。' },
   { id: 'snow', n: '亭桥残雪', tag: '冬', p: [-3, 7.5, 21], l: [-21, 2, -4], m: { s: 3, t: 0, r: 0 }, txt: '雪霁天晴，瓦垄、栏板与石板上都压着雪，向阳处先化，远望桥面似断非断，正是“断桥残雪”的意思。' },
   { id: 'leifeng', n: '雷峰夕照', tag: '黄昏', p: [-46, 6, 30], l: [-120, 20, 170], m: { t: .5 }, txt: '雷峰塔立在南岸夕照山上，吴越国时始建，1924 年倒塌，2002 年重建，八面五层。日落时塔影与晚霞同框。' },
-  { id: 'santan', n: '三潭印月', tag: '月夜', p: [-64, 2.3, 93], l: [-94, 4.5, 57], m: { s: 2, t: 1 }, txt: '湖中三座石塔，高约两米，球形塔身中空、环开五个圆孔。中秋夜塔内点烛，孔中透出的光映在水里，与月影难分。' },
+  { id: 'santan', n: '三潭印月', tag: '月夜', p: [-186, 2.4, 174], l: [-222, 4.5, 127], m: { s: 2, t: 1 }, txt: '湖中三座石塔，高约两米，球形塔身中空、环开五个圆孔。中秋夜塔内点烛，孔中透出的光映在水里，与月影难分。' },
   { id: 'baochu', n: '保俶塔影', tag: '远山', p: [-22, 8, -4], l: [-56, 34, -300], txt: '北岸宝石山上的保俶塔，六面七层实心砖塔，瘦削挺拔。老话说“雷峰如老衲，保俶如美人”。' },
-  { id: 'sudi', n: '苏堤春晓', tag: '远景', p: [-70, 12, -20], l: [-260, 6, -70], m: { s: 0, t: 0 }, txt: '苏轼疏浚西湖时用淤泥筑成的长堤，近三公里，六座石拱桥。春天远望，是一条粉绿相间的线。' },
+  { id: 'sudi', n: '苏堤春晓', tag: '春', p: [-470, 16, -80], l: [-570, 4, -30], m: { s: 0, t: 0 }, txt: '苏轼疏浚西湖时用淤泥筑成的长堤，近三公里，自北而南六座石拱桥：跨虹、东浦、压堤、望山、锁澜、映波。堤上一株杨柳一株桃。' },
+  { id: 'duanqiao', n: '断桥残雪', tag: '冬', p: [-78, 15, -578], l: [5, 5, -638], m: { s: 3, t: 0, r: 0 }, txt: '白堤东头的单孔石拱桥。雪后桥的阳面先化，远望桥身似断非断；《白蛇传》里许仙与白娘子也在这里相遇。' },
+  { id: 'pinghu', n: '平湖秋月', tag: '秋夜', p: [-128, 5, -514], l: [-178, 5, -550], m: { s: 2, t: 1 }, txt: '孤山东南角伸进湖里的一方平台，三面临水。秋夜月出，湖平如镜，是看月亮最开阔的地方。' },
+  { id: 'gushan', n: '孤山', tag: '岛', p: [-300, 46, -430], l: [-335, 8, -562], txt: '西湖里最大的岛，山高不过三十多米。东接白堤、西连西泠桥，山后放鹤亭一带以梅花闻名。' },
+  { id: 'xiaoying', n: '小瀛洲', tag: '岛', p: [-128, 46, 128], l: [-215, 2, 44], txt: '用浚湖的淤泥堆成的环形岛，“湖中有岛，岛中有湖”。九曲桥贯穿内湖，岛南水面立着三座石塔。' },
+  { id: 'huxin', n: '湖心亭', tag: '岛', p: [-246, 20, -168], l: [-300, 5, -231], txt: '湖心的小岛与重檐楼阁，西湖三岛里建得最早。张岱《湖心亭看雪》写的就是这里。' },
+  { id: 'nanping', n: '南屏晚钟', tag: '黄昏', p: [-52, 22, 462], l: [-128, 7, 560], m: { t: .5 }, txt: '南屏山下的净慈寺，黄墙殿宇。傍晚寺钟一响，山谷回应，声传湖上。点“听南屏晚钟”可以敲一下。' },
 ];
-const LABELS = [['qiao', -13, 2.4, -3], ['ting', -36, 10.8, -6], ['lang', 5.5, 5.4, -14], ['xie', .4, 6.6, -38.9], ['arch', 13, 4.8, 44], ['gate', 24, 4.4, 0], ['pier', 1.4, 2, 21], ['santan', -92, 3.6, 53], ['leifeng', -330, 132, 560], ['sudi', -560, 22, -120]];
+const LABELS = [['qiao', -13, 2.4, -3], ['ting', -36, 10.8, -6], ['lang', 5.5, 5.4, -14], ['xie', .4, 6.6, -38.9], ['arch', 13, 4.8, 44], ['gate', 24, 4.4, 0], ['pier', 1.4, 2, 21], ['santan', -215, 5, 128], ['leifeng', -330, 132, 560], ['sudi', -560, 22, -120],
+  ['duanqiao', 5, 13, -638], ['pinghu', -176, 11, -548], ['gushan', -345, 40, -566], ['xiaoying', -215, 13, 42], ['huxin', -300, 15, -231], ['nanping', -128, 20, 560]];
 const PGROUPS = [
   ['亭', [
     ['pv-finial', '宝顶', [-29, 10.6, -.5], [-36, 9.3, -6], '攒尖顶各条脊在顶端汇合，用宝顶压住收束，既是造型的句号，也防雨水从顶心渗入。'],
@@ -1356,11 +1623,20 @@ const PGROUPS = [
     ['shrubs', '灌木', [5, 2.4, -72], [9, .9, -76], '路边的杜鹃春天开花，墙下是修剪成团的桂花。'],
     ['bamboo', '竹', [22, 3.4, 4], [28.5, 4, 7], '月洞门后两丛竹，为白墙添一笔绿影。'],
   ]],
+  ['环湖', [
+    ['bai', '白堤与断桥', [-60, 26, -545], [-40, 3, -618], '白堤横在外湖与北里湖之间，中有锦带桥，东头是断桥。堤上桃柳相间。'],
+    ['gushan', '孤山', [-300, 46, -430], [-335, 8, -562], '岛上有山、有楼阁、有梅林，东南角是平湖秋月的临水平台，西端经西泠桥连到苏堤。'],
+    ['xiaoying', '小瀛洲', [-128, 46, 128], [-215, 2, 44], '环形的岛，中间留出内湖，十字堤与曲桥相连。'],
+    ['huxin', '湖心亭与阮公墩', [-246, 20, -168], [-300, 5, -231], '湖心亭是重檐楼阁的小岛；西面更小的阮公墩是清代疏浚西湖时堆成的。'],
+    ['temple', '净慈寺', [-52, 22, 462], [-128, 7, 560], '黄墙围起的三进殿宇，左右钟鼓二楼。'],
+    ['north', '北山街', [-150, 46, -610], [-140, 8, -780], '北岸山脚下的一排老房子。'],
+    ['city', '城东天际线', [-90, 70, 0], [700, 40, 0], '湖东是城区，近湖低、远处高，入夜亮起万家灯火。'],
+  ]],
   ['远景', [
-    ['santan', '三潭石塔', [-60, 2.6, 34], [-92, 1.2, 53], '湖中三座石塔，球形塔身环开五孔。'],
+    ['santan', '三潭石塔', [-186, 2.4, 174], [-222, 4.5, 127], '湖中三座石塔，球形塔身环开五孔。'],
     ['far-leifeng', '雷峰塔', [-46, 6, 30], [-120, 20, 170], '夕照山上的雷峰塔，入夜通体金黄。'],
     ['far-baochu', '保俶塔', [-22, 8, -4], [-56, 34, -300], '宝石山上的保俶塔。'],
-    ['far-su', '苏堤', [-70, 12, -20], [-260, 6, -70], '长堤卧波，桃柳成行，石拱桥隔出里外湖。'],
+    ['far-su', '苏堤', [-470, 16, -80], [-570, 4, -30], '长堤卧波，桃柳成行，石拱桥隔出里外湖。'],
     ['far-hill', '群山', [10, 30, 30], [-200, 30, 40], '三面云山一面城：近山青，远山淡，层层退入雾中。'],
   ]],
 ];
@@ -1392,7 +1668,7 @@ function sceneTheme() { const n = ST.tod > .62; if (n !== sceneTheme.v) { sceneT
 function showCard(title, tag, txt, btns) { $('#c-title').textContent = title; $('#c-tag').textContent = tag; $('#c-text').textContent = txt; const b = $('#c-btns'); b.innerHTML = ''; (btns || []).forEach(x => { const e = document.createElement('button'); e.textContent = x[0]; e.onclick = x[1]; b.appendChild(e); }); $('#card').hidden = false; }
 function markSel(id) { sel = id; $$('.item').forEach(e => e.classList.toggle('on', e.dataset.id === id)); }
 function setFocus(f) { ST.focus = f; applyOpacity(); }
-function stopModes() { if (walk.on) stopWalk(); }
+function stopModes() { if (walk.on) stopWalk(); if (lap.on) stopLap(); }
 function selectView(id, quiet) {
   const v = VIEWS.find(x => x.id === id); if (!v) return; stopModes(); setFocus(null); markSel(id);
   if (v.m) { if (v.m.s != null) setSeason(v.m.s); if (v.m.t != null) setTod(v.m.t); if (v.m.r != null) setRain(v.m.r); }
@@ -1418,7 +1694,12 @@ function buildUI() {
   $$('#wx button').forEach(b => b.onclick = () => setRain(+b.dataset.r));
   $('#op').oninput = e => { ST.opacity = e.target.value / 100; $('#op-v').textContent = e.target.value + '%'; applyOpacity(); };
   $('#a-walk').onclick = () => walk.on ? stopWalk() : startWalk();
-  $('#a-cycle').onclick = () => cycle(!cyc.on);
+  $('#a-cycle').onclick = () => { if (lap.on) stopLap(); cycle(!cyc.on); };
+  $('#a-lap').onclick = () => lap.on ? stopLap() : startLap();
+  $('#a-imm').onclick = () => setImmersive(true);
+  $('#imm-exit').onclick = () => setImmersive(false);
+  window.addEventListener('pointermove', () => { if (document.body.classList.contains('immersive')) pokeImm(); });
+  window.addEventListener('pointerdown', () => { if (document.body.classList.contains('immersive')) pokeImm(); });
   $('#a-bell').onclick = bell;
   $('#a-reset').onclick = () => selectView('all');
   $('#a-labels').onclick = e => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', on); $('#labels').hidden = !on; };
@@ -1428,7 +1709,7 @@ function buildUI() {
   const L = $('#labels'); LABELS.forEach(a => { const v = VIEWS.find(x => x.id === a[0]), e = document.createElement('button'); e.className = 'lb'; e.textContent = v.n; e.onclick = () => selectView(v.id); L.appendChild(e); a.el = e; a.v = new V3(a[1], a[2], a[3]); });
   window.addEventListener('resize', resize);
   window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id !== sel && VIEWS.some(v => v.id === id)) selectView(id); });
-  window.addEventListener('keydown', e => { if (e.key === 'Escape') { setFocus(null); selectView('all'); } });
+  window.addEventListener('keydown', e => { if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return; if (e.key === 'Escape') { if (document.body.classList.contains('immersive')) setImmersive(false); else { setFocus(null); selectView('all'); } } else if (e.key === 'h' || e.key === 'H') setImmersive(!document.body.classList.contains('immersive')); });
 }
 const _pv = new V3();
 function updateLabels() {
@@ -1459,8 +1740,26 @@ function walkAt(t) {
   walk.l.set(walk.p.x + Math.sin(yaw) * Math.cos(pit) * 10, walk.p.y + Math.sin(pit) * 10, walk.p.z + Math.cos(yaw) * Math.cos(pit) * 10);
   CAM.free = { p: walk.p, l: walk.l }; CAM.fly = null; ST.tod = TG.tod = walkTod(t);
 }
-function startWalk() { cycle(false); setFocus(null); walk.on = true; walk.t = 0; $('#a-walk').setAttribute('aria-pressed', true); $('#a-walk').textContent = '结束漫步'; $('#card').hidden = false; showCard('湖畔漫步', '从午后走到入夜', '镜头贴着湖面靠岸，踏上九曲桥，一折一景走进亭中；日头西沉，灯一盏盏亮起来，最后回望水里的亭影。拖动画面可随时接管视角。', [['结束漫步', stopWalk]]); markSel(null); }
+function startWalk() { cycle(false); if (lap.on) stopLap(); setFocus(null); walk.on = true; walk.t = 0; $('#a-walk').setAttribute('aria-pressed', true); $('#a-walk').textContent = '结束漫步'; $('#card').hidden = false; showCard('湖畔漫步', '从午后走到入夜', '镜头贴着湖面靠岸，踏上九曲桥，一折一景走进亭中；日头西沉，灯一盏盏亮起来，最后回望水里的亭影。拖动画面可随时接管视角。', [['结束漫步', stopWalk]]); markSel(null); }
 function stopWalk() { if (!walk.on) return; walk.on = false; $('#a-walk').setAttribute('aria-pressed', false); $('#a-walk').textContent = '湖畔漫步'; if (CAM.free) { const o = poseToOrbit(walk.p.toArray(), walk.l.toArray()); CAM.free = null; Object.assign(CAM.d, { th: o.th, ph: o.ph, r: o.r }); CAM.d.t.copy(o.t); CAM.t.copy(o.t); CAM.th = o.th; CAM.ph = o.ph; CAM.r = o.r; } setTod(ST.tod > .75 ? 1 : ST.tod > .3 ? .5 : 0); }
+// 环湖一周：沿湖心一侧的闭合航线匀速飞行，东岸起春、南岸入夏、西堤逢秋、北岸落雪，回到东岸又是一春
+const LAP = [[-75, 16, 10], [-62, 22, 150], [-110, 30, 310], [-225, 34, 400], [-390, 26, 360], [-480, 22, 200], [-500, 20, 0], [-492, 22, -200], [-460, 26, -400], [-385, 28, -470], [-225, 22, -496], [-85, 20, -545], [-28, 24, -380], [-58, 20, -160]];
+const lapCurve = new THREE.CatmullRomCurve3(LAP.map(p => new V3(p[0], p[1], p[2])), true, 'centripetal'), LAP_T = 180, _la = new V3();
+const SIGHTS = [['集贤亭 · 九曲桥', -36, -6], ['雷峰塔', -330, 560], ['净慈寺 · 南屏晚钟', -128, 560], ['小瀛洲 · 三潭印月', -215, 70], ['苏堤', -545, 250], ['苏堤', -575, -150], ['阮公墩', -410, -110], ['湖心亭', -300, -231], ['孤山', -360, -560], ['平湖秋月', -176, -548], ['白堤', -80, -600], ['断桥', 5, -638]];
+const lap = { on: false, t: 0, cap: '' };
+function lapAt(u) {
+  u = ((u % 1) + 1) % 1; lapCurve.getPointAt(u, walk.p); lapCurve.getPointAt((u + .05) % 1, _la);
+  const ox = _la.x + 280, oz = _la.z + 80, ol = Math.hypot(ox, oz) || 1; walk.l.set(_la.x + ox / ol * 42, 6, _la.z + oz / ol * 42);
+  CAM.free = { p: walk.p, l: walk.l }; CAM.fly = null; ST.season = TG.season = u * 4;
+}
+function startLap() { cycle(false); if (walk.on) stopWalk(); setFocus(null); lap.on = true; $('#a-lap').setAttribute('aria-pressed', true); $('#a-lap').textContent = '结束环湖'; markSel(null); $('#card').hidden = true; }
+function stopLap() { if (!lap.on) return; lap.on = false; $('#a-lap').setAttribute('aria-pressed', false); $('#a-lap').textContent = '环湖一周'; $('#cap').style.opacity = 0; lap.cap = '';
+  if (CAM.free) { const o = poseToOrbit(walk.p.toArray(), walk.l.toArray()); CAM.free = null; Object.assign(CAM.d, { th: o.th, ph: o.ph, r: o.r }); CAM.d.t.copy(o.t); CAM.t.copy(o.t); CAM.th = o.th; CAM.ph = o.ph; CAM.r = o.r; }
+  const k = ((Math.round(ST.season) % 4) + 4) % 4; ST.season = ((ST.season % 4) + 4) % 4; TG.season = ST.season; setSeason(k); }
+// 沉浸模式：隐藏全部界面，只留画面；移动鼠标或轻点时角上浮出“显示界面”
+let immT = 0;
+function setImmersive(on) { document.body.classList.toggle('immersive', on); $('#a-imm').setAttribute('aria-pressed', on); if (on) pokeImm(); }
+function pokeImm() { const e = $('#imm-exit'); e.classList.add('show'); clearTimeout(immT); immT = setTimeout(() => e.classList.remove('show'), 2600); }
 const cyc = { on: false, t: 0 };
 function cycle(on) { cyc.on = on; cyc.t = 0; $('#a-cycle').setAttribute('aria-pressed', on); }
 
@@ -1472,9 +1771,11 @@ function bell() {
 }
 
 WL.onTap = (cx, cy) => { const p = pickWater(cx, cy); if (!p) return; addRipple(p[0], p[1], 1); feed = { x: p[0], z: p[1], t: WL.time }; if (ENV.night > .5) releaseLantern(p[0], p[1]); };
-WL.onUserMove = () => { if (walk.on) stopWalk(); };
+WL.onUserMove = () => { if (walk.on) stopWalk(); if (lap.on) stopLap(); };
 WL.tick = (dt, t) => {
   if (walk.on) { walk.t += dt * .62; walkAt(walk.t); if (walk.t >= WALK_T) { stopWalk(); selectView('ting'); setTod(1); } if (Math.floor(walk.t * 1.3) !== Math.floor((walk.t - dt * .62) * 1.3) && walk.t > 8.6 && walk.t < 23) { /* 脚边的水纹 */ addRipple(walk.p.x + rr(-3, 3), walk.p.z + rr(-3, 3), .35); } }
+  if (lap.on) { lap.t += dt; lapAt(lap.t / LAP_T); let best = '', bd = 230; for (const s of SIGHTS) { const d = Math.hypot(s[1] - walk.p.x, s[2] - walk.p.z); if (d < bd) { bd = d; best = s[0]; } }
+    if (best !== lap.cap) { lap.cap = best; const c = $('#cap'); c.style.opacity = 0; clearTimeout(lap.ct); if (best) lap.ct = setTimeout(() => { c.textContent = best; c.style.opacity = 1; }, 600); } }
   if (cyc.on) { if (!CAM.fly && !CAM.free && !walk.on) CAM.d.th += dt * .1; cyc.t += dt; if (cyc.t > 4.6 && ST.season === TG.season) { cyc.t = 0; setSeason((curSeason() + 1) % 4); } }
   if (ST.rain > .5 && Math.random() < dt * 2.5) { camera.getWorldDirection(_fw); addRipple(camera.position.x + _fw.x * 14 + rr(-10, 10), camera.position.z + _fw.z * 14 + rr(-10, 10), .3); }
   sceneTheme();
@@ -1509,8 +1810,9 @@ WL.filmFrame = (t, dt) => {
 };
 
 function init() {
-  buildShore(); buildBridge(); buildPavilion(); buildCorridor(); buildHall(); buildArchBridge(); buildWall(); buildFacilities(); buildFlora(); buildFar();
-  B.flush(world).forEach(m => { const p = m.userData.part; if (p.startsWith('far-')) { m.castShadow = false; m.receiveShadow = false; } });
+  // 分批合并上传，避免一次攒下全部顶点数据
+  const fl = () => B.flush(world).forEach(m => { const p = m.userData.part; if (p.startsWith('far-')) { m.castShadow = false; m.receiveShadow = false; } else if (p === 'north' || p === 'temple') m.castShadow = false; });
+  buildShore(); buildBridge(); buildPavilion(); buildCorridor(); buildHall(); buildArchBridge(); buildWall(); buildFacilities(); fl(); buildFlora(); fl(); buildFar(); fl(); buildLake(); fl();
   ['shrubs', 'bench', 'rockery', 'wall', 'bamboo', 'path', 'lawn'].forEach(id => PARTS[id] && PARTS[id].meshes.forEach(m => hideInRefl.push(m)));   // 倒影里看不到的部件不必再画一遍
   buildLotus(); buildKoi(); buildBoat(bankX(20) - 2.5, 21.3, PI / 2 + .12); buildBoat(bankX(26) - 3.2, 28.5, PI / 2 - .3);
   buildLanterns(); buildGlow();
@@ -1521,7 +1823,7 @@ function init() {
   frame(.016); $('#veil').classList.add('off'); WL.ready = true; requestAnimationFrame(loop);
 }
 requestAnimationFrame(() => setTimeout(() => { try { init(); } catch (e) { console.error(e); $('#veil').textContent = '场景加载失败：' + e.message; } }, 30));
-WL.api = { selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
+WL.api = { lapAt, startLap, setImmersive, selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
 WL.sync = () => { const gl = renderer.getContext(), px = new Uint8Array(4); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); return px[0]; };
 WL.info = () => ({ tris: renderer.info.render.triangles, calls: renderer.info.render.calls, meshes: MESHES.length, mats: MATS.length });
 WL.r = renderer; WL.water = water;

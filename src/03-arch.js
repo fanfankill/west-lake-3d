@@ -28,20 +28,23 @@ function stations(a, b, step) { const l = Math.hypot(b[0] - a[0], b[1] - a[1]), 
 function roofPt(o, k, u, t) {
   const au = Math.abs(u), c3 = t * t * t, f = (o.flare || 0) * au * au * c3;
   let ap, hw, a;
-  if (o.rect) { const X = lerp(o.x0, o.x1, t), Z = lerp(o.z0, o.z1, t); a = k * PI / 2; if (k % 2 === 0) { ap = Z + f; hw = X + f; } else { ap = X + f; hw = Z + f; } }
+  if (o.rect) { const X = lerp(o.x0, o.x1, t), Z = lerp(o.z0, o.z1, t); a = k * PI / 2 + (o.rot || 0); if (k % 2 === 0) { ap = Z + f; hw = X + f; } else { ap = X + f; hw = Z + f; } }
   else { const r = lerp(o.rTop, o.rEave, t) + f; a = k * TAU / o.sides + (o.rot || 0); ap = r; hw = r * Math.tan(PI / o.sides); }
   const nx = Math.sin(a), nz = Math.cos(a), ex = Math.cos(a), ez = -Math.sin(a);
   const y = o.h * (1 - t) - Math.sin(PI * t) * o.sag * o.h + o.lift * Math.pow(au, 2.4) * c3;
   return [o.cx + nx * ap + ex * hw * u, o.cy + y, o.cz + nz * ap + ez * hw * u];
 }
 function buildRoof(pTile, pRidge, o, q = {}) {
-  const N = o.rect ? 4 : o.sides, nu = q.nu || 12, nt = q.nt || 10, sp = q.sp || 0.27;
+  const Bq = q.B || B, N = o.rect ? 4 : o.sides, nu = q.nu || 12, nt = q.nt || 10, sp = q.sp || 0.27;
   for (let k = 0; k < N; k++) {
     const pos = [], pos2 = [], idx = [], idx2 = [];
     for (let i = 0; i <= nt; i++) for (let j = 0; j <= nu; j++) { const p = roofPt(o, k, j / nu * 2 - 1, i / nt); pos.push(p[0], p[1], p[2]); pos2.push(p[0], p[1] - 0.1, p[2]); }
     for (let i = 0; i < nt; i++) for (let j = 0; j < nu; j++) { const a = i * (nu + 1) + j, b = a + 1, c = a + nu + 1, d = c + 1; idx.push(a, b, c, b, d, c); idx2.push(a, c, b, b, c, d); }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); B.add(pTile, 'tile', g, null, .86);
-    const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g2.setIndex(idx2); g2.computeVertexNormals(); B.add(pTile, 'woodDk', g2, null, 1);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); Bq.add(pTile, 'tile', g, null, .86);
+    const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g2.setIndex(idx2); g2.computeVertexNormals(); Bq.add(pTile, 'woodDk', g2, null, 1);
+    // 瓦面与望板各补一份反向的面：无论从哪一侧看，朝上的总是瓦、朝下的总是木
+    const g3 = new THREE.BufferGeometry(); g3.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g3.setIndex(idx2); g3.computeVertexNormals(); Bq.add(pTile, 'tile', g3, null, .86);
+    const g4 = new THREE.BufferGeometry(); g4.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); g4.setIndex(idx); g4.computeVertexNormals(); Bq.add(pTile, 'woodDk', g4, null, 1);
     // 瓦垄
     const e0 = roofPt(o, k, -1, 1), e1 = roofPt(o, k, 1, 1), wE = Math.hypot(e1[0] - e0[0], e1[2] - e0[2]) / 2, nr = Math.floor(wE * 2 / sp);
     for (let r = 0; r < nr; r++) {
@@ -50,19 +53,19 @@ function buildRoof(pTile, pRidge, o, q = {}) {
         const t = i / nt, a0 = roofPt(o, k, -1, t), a1 = roofPt(o, k, 1, t), w = Math.hypot(a1[0] - a0[0], a1[2] - a0[2]) / 2, u = w > 1e-3 ? s / w : 9;
         if (Math.abs(u) > 0.97) { if (prev && i < nt) { // 收到戗脊
             const t2 = (i + 1) / nt; let lo = t, hi = t2; for (let b = 0; b < 6; b++) { const m = (lo + hi) / 2, c0 = roofPt(o, k, -1, m), c1 = roofPt(o, k, 1, m); if (Math.abs(s) / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2) > .97) lo = m; else hi = m; }
-            const c0 = roofPt(o, k, -1, hi), c1 = roofPt(o, k, 1, hi), p = roofPt(o, k, s / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2), hi); p[1] += .045; B.seg(pTile, 'tile', prev, p, .12, .08);
+            const c0 = roofPt(o, k, -1, hi), c1 = roofPt(o, k, 1, hi), p = roofPt(o, k, s / (Math.hypot(c1[0] - c0[0], c1[2] - c0[2]) / 2), hi); p[1] += .045; Bq.seg(pTile, 'tile', prev, p, .12, .08);
           } break; }
-        const p = roofPt(o, k, u, t); p[1] += .045; if (prev) B.seg(pTile, 'tile', prev, p, .12, .08); prev = p;
+        const p = roofPt(o, k, u, t); p[1] += .045; if (prev) Bq.seg(pTile, 'tile', prev, p, .12, .08); prev = p;
       }
     }
     // 戗脊 + 翼角
     let prev = null; const nh = 14;
-    for (let i = 0; i <= nh; i++) { const p = roofPt(o, k, 1, i / nh); p[1] += .1; if (prev) B.seg(pRidge, 'ridge', prev, p, .2, .22, .95); prev = p; }
+    for (let i = 0; i <= nh; i++) { const p = roofPt(o, k, 1, i / nh); p[1] += .1; if (prev) Bq.seg(pRidge, 'ridge', prev, p, .2, .22, .95); prev = p; }
     const pa = roofPt(o, k, 1, 1), pb = roofPt(o, k, 1, .86); let dx = pa[0] - pb[0], dz = pa[2] - pb[2]; const dl = Math.hypot(dx, dz); dx /= dl; dz /= dl;
     const t1 = [pa[0] + dx * .32, pa[1] + .26, pa[2] + dz * .32], t2 = [pa[0] + dx * .5, pa[1] + .62, pa[2] + dz * .5];
-    B.seg(pRidge, 'ridge', [pa[0], pa[1] + .1, pa[2]], t1, .16, .18, .95); B.seg(pRidge, 'ridge', t1, t2, .11, .12, .95);
+    Bq.seg(pRidge, 'ridge', [pa[0], pa[1] + .1, pa[2]], t1, .16, .18, .95); Bq.seg(pRidge, 'ridge', t1, t2, .11, .12, .95);
     // 檐口
-    for (let j = 0; j < nu; j++) { const a = roofPt(o, k, j / nu * 2 - 1, 1), b = roofPt(o, k, (j + 1) / nu * 2 - 1, 1); a[1] -= .03; b[1] -= .03; B.seg(pTile, 'ridge', a, b, .09, .13, 1); }
+    for (let j = 0; j < nu; j++) { const a = roofPt(o, k, j / nu * 2 - 1, 1), b = roofPt(o, k, (j + 1) / nu * 2 - 1, 1); a[1] -= .03; b[1] -= .03; Bq.seg(pTile, 'ridge', a, b, .09, .13, 1); }
   }
 }
 // 挂落：枋下的木格花饰
@@ -86,7 +89,7 @@ function meiRenKao(part, a, b, y, ox, oz) {
 }
 // 石栏：望柱 + 栏板
 function stoneRail(part, line, yOf, step = 1.7) {
-  const post = (p) => { const y = yOf(p); B.box(part, 'stone', p[0], y + .43, p[1], .17, .86, .17); B.box(part, 'stone', p[0], y + .9, p[1], .2, .05, .2, 0, .93); B.add(part, 'stone', new THREE.SphereGeometry(.085, 8, 6), TM(p[0], y + .99, p[1], 0, 1, 1.3, 1), 1.02); };
+  const post = (p) => { const y = yOf(p); B.box(part, 'stone', p[0], y + .43, p[1], .17, .86, .17); B.box(part, 'stone', p[0], y + .9, p[1], .2, .05, .2, 0, .93); B.add(part, 'stone', new THREE.SphereGeometry(.085, 7, 4), TM(p[0], y + .99, p[1], 0, 1, 1.3, 1), 1.02); };
   for (let i = 0; i < line.length - 1; i++) {
     const st = stations(line[i], line[i + 1], step);
     st.forEach((p, j) => { if (j > 0 || i === 0) post(p); if (j < st.length - 1) { const q = st[j + 1], y0 = yOf(p), y1 = yOf(q);
@@ -99,6 +102,8 @@ function lathe(pts, seg) {
   if (N.getX(bi) * P.getX(bi) + N.getZ(bi) * P.getZ(bi) < 0) { const ix = g.index.array; for (let i = 0; i < ix.length; i += 3) { const t = ix[i]; ix[i] = ix[i + 1]; ix[i + 1] = t; } g.computeVertexNormals(); }
   return g;
 }
+// 路灯：石础、铁杆、方灯罩，入夜自亮
+function lampPost(part, x, y, z) { B.box(part, 'stone', x, y + .12, z, .4, .24, .4); B.add(part, 'metal', new THREE.CylinderGeometry(.05, .07, 3.2, 8), TM(x, y + 1.8, z)); B.box(part, 'lampGl', x, y + 3.66, z, .34, .46, .34, 0, 1); [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(d => B.box(part, 'metal', x + d[0] * .175, y + 3.66, z + d[1] * .175, .035, .5, .035)); B.box(part, 'metal', x, y + 3.41, z, .4, .04, .4); B.add(part, 'metal', new THREE.ConeGeometry(.36, .22, 4), TM(x, y + 4.0, z, PI / 4)); addGlow(x, y + 3.66, z, 0xffc888, 8); }
 function column(part, x, z, y0, y1, r = .15) {
   B.add(part, 'wood', new THREE.CylinderGeometry(r * .92, r, y1 - y0, 12), TM(x, (y0 + y1) / 2, z));
   B.add(part, 'stone', lathe([[r * 1.25, 0], [r * 1.75, .05], [r * 1.85, .12], [r * 1.5, .2], [r * 1.1, .22], [0, .22]], 12), TM(x, y0 - .02, z));
@@ -132,7 +137,7 @@ function buildShore() {
   { const fg = new THREE.PlaneGeometry(2600, 2400, 8, 8).rotateX(-PI / 2); fg.translate(2055, Y0 - .03, -175); B.add('lawn', 'farLand', fg, null, 1); }   // 远处的平地另用一块粗网格，免得近处草地跟着一个几公里的大三角形
   [extN.concat([bank[0]]), [bank[bank.length - 1]].concat(extS)].forEach(ln => { for (let i = 0; i < ln.length - 1; i++) { const a = ln[i], b = ln[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
     B.seg('bank', 'stone', [a[0], -.5, a[1]], [b[0], -.5, b[1]], .8, 2, .85);
-    for (let s = 6; s < l; s += 9) { const x = lerp(a[0], b[0], s / l), z = lerp(a[1], b[1], s / l); if (Math.abs(z) < 330) { treeLite(['camphor', 'plane'][(s / 9 | 0) % 2], x + rr(5, 9), z, rr(.7, .9)); treeLite('camphor', x + rr(18, 34), z + rr(-4, 4), rr(.9, 1.2)); continue; } blob('trees', (s / 9 | 0) % 4 === 1 ? 'farPeach' : 'farTree', x + rr(4, 9), Y0 + rr(4, 6), z + rr(-2, 2), rr(4, 6), rr(4.5, 7), rr(4, 6), rr(.85, 1.1), 0, 1); if (s % 2 < 1) blob('trees', 'farTree', x + rr(16, 40), Y0 + rr(6, 9), z + rr(-4, 4), rr(7, 10), rr(7, 10), rr(7, 10), rr(.8, 1), 0, 1); } } });
+    for (let s = 6; s < l; s += 9) { const x = lerp(a[0], b[0], s / l), z = lerp(a[1], b[1], s / l); if (Math.abs(z) < 330) { treeLite(['camphor', 'plane'][(s / 9 | 0) % 2], x + rr(5, 9), z, rr(.7, .9)); treeLite('camphor', x + rr(18, 34), z + rr(-4, 4), rr(.9, 1.2)); continue; } if ((s / 9 | 0) % 4 === 1) tree('peach', x + rr(4, 8), z + rr(-2, 2), 'trees', 1.2); else treeFar('trees', ['camphor', 'plane', 'ginkgo'][(s / 9 | 0) % 3], x + rr(4, 9), Y0, z + rr(-2, 2), rr(.6, .85)); if (s % 2 < 1) treeFar('trees', 'camphor', x + rr(16, 40), Y0, z + rr(-4, 4), rr(.95, 1.25)); } } });
   const lawnTex = canvasTex(256, 256, (c, w) => { c.fillStyle = '#e9e9e9'; c.fillRect(0, 0, w, w); const r = mulberry(5); for (let i = 0; i < 9000; i++) { const v = 200 + r() * 55 | 0; c.fillStyle = `rgba(${v},${v},${v - 20},.5)`; c.fillRect(r() * w, r() * w, 1 + r() * 2, 2 + r() * 3); } }, true); lawnTex.repeat.set(.16, .16);
   const lg = new THREE.ShapeGeometry(sh); lg.rotateX(-PI / 2); lg.translate(0, Y0, 0);
   const lawn = new THREE.Mesh(lg, makeMat('lawn', { vertexColors: false, map: lawnTex })); lawn.receiveShadow = true; world.add(lawn); regMesh(lawn, 'lawn', 'lawn');

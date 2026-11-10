@@ -26,12 +26,14 @@
   </div>
   <div class="row"><div class="lab">体验</div>
     <div class="acts">
+      <button class="act" id="a-lap" aria-pressed="false">环湖一周</button>
       <button class="act" id="a-walk" aria-pressed="false">湖畔漫步</button>
       <button class="act" id="a-cycle" aria-pressed="false">四季流转</button>
       <button class="act" id="a-bell">听南屏晚钟</button>
+      <button class="act" id="a-imm" aria-pressed="false">沉浸模式</button>
       <button class="act" id="a-reset">回到全景</button>
     </div>
-    <p class="tip">点一下湖面，涟漪荡开，桥边的锦鲤会循着游来；入夜后再点，可放一盏荷灯。</p>
+    <p class="tip">环湖一周约三分钟，沿途四季流转。沉浸模式隐藏全部界面，按 H 或 Esc 恢复。点湖面起涟漪，入夜可放荷灯。</p>
   </div>
   <div class="row"><label for="op">整体透明度<b id="op-v" style="letter-spacing:.05em;font-variant-numeric:tabular-nums">100%</b></label>
     <input type="range" id="op" min="8" max="100" value="100">
@@ -47,6 +49,8 @@
   <div class="body"><div class="tag" id="c-tag"></div><p id="c-text"></p><div class="btns" id="c-btns"></div></div>
 </section>
 
+<div id="cap" aria-live="polite"></div>
+<button id="imm-exit">显示界面</button>
 <nav id="mbar" class="panel"><button data-sheet="explore" aria-pressed="false">探索</button><button data-sheet="dock" aria-pressed="false">时令</button></nav>
 <div id="film"><div class="t1"></div><div class="t2"></div><div class="s1"></div><div class="sn"></div><div class="sd"></div><div class="e1"></div><div class="e2"></div><div class="fade"></div></div>
 <div id="veil">研墨铺纸…</div>

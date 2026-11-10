@@ -1,5 +1,5 @@
 // ───────── 01 core：工具、材质、合并构建器 ─────────
-const WL = window.WL = { time: 0, film: /film/.test(location.hash) };
+const WL = window.WL = { time: 0, film: /film/.test(location.hash), nightHooks: [] };
 const { Vector3: V3, Color, Matrix4, Quaternion, Euler } = THREE;
 const TAU = Math.PI * 2, PI = Math.PI;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -37,12 +37,12 @@ const MD = {
   canvasW: { c: 0xe8e4d8, t: 'p', snow: .9 },
   bark:    { dt: 'bark', c: 0x5a4636, t: 'l', snow: .8, jit: .12 },
   bed:     { c: 0x5d6048, t: 'l', snow: 0 },
-  lawn:    { dt: 'lawn', c: 0x7fa85e, t: 'l', snow: .96, season: [0x84ad60, 0x5e9449, 0x9a9c58, 0xa8ae98] },
+  lawn:    { dt: 'lawn', c: 0x7fa85e, t: 'l', snow: .96, season: [0x7fa664, 0x5e9449, 0x9a9c58, 0xa8ae98] },
   paving:  { c: 0xc4bfb1, t: 'l', snow: .85 },
-  farLand: { dt: 'hill', c: 0x7fae68, t: 'l', snow: .95, season: [0x8dbd72, 0x5f9a56, 0xa39a58, 0xaab3a6] },
-  hill1:   { dt: 'hill', c: 0x5f9a62, t: 'l', snow: .9, season: [0x6faa6c, 0x3f7f4d, 0x93834a, 0x8b9a94] },
-  hill2:   { dt: 'hill', c: 0x6fa27a, t: 'l', snow: .9, season: [0x80b088, 0x4d8a66, 0x97906a, 0x9aa8a6] },
-  hill3:   { dt: 'hill', c: 0x86ad9a, t: 'l', snow: .9, season: [0x97bba6, 0x6a9c8a, 0xa39f8c, 0xaab7b8] },
+  farLand: { dt: 'lawn', c: 0x7fae68, t: 'l', snow: .95, season: [0x7c9f62, 0x5a8a4c, 0x94935a, 0xa6ac98] },
+  hill1:   { dt: 'hill', c: 0x5f9a62, t: 'l', snow: .9, season: [0x5f9358, 0x3f7748, 0x8a7c48, 0x86948c] },
+  hill2:   { dt: 'hill', c: 0x6fa27a, t: 'l', snow: .9, season: [0x6c9a74, 0x4a7f5e, 0x8c8862, 0x94a29e] },
+  hill3:   { dt: 'hill', c: 0x86ad9a, t: 'l', snow: .9, season: [0x8aaa9c, 0x6a9684, 0x9c9a88, 0xa6b2b2] },
   pagoda:  { c: 0x6d4a34, t: 'l', snow: .5, glow: 0xffb04a, gi: .95 },
   brick:   { c: 0x94897a, t: 'l', snow: .5, glow: 0xffe2b0, gi: .5 },
   willow:  { tex: 'willow', c: 0x8cc05c, t: 'l', snow: .35, sway: 1, side: 2, season: [0xa5c95a, 0x55913f, 0xa39c44, 0xa5966c] },
@@ -61,6 +61,7 @@ const MD = {
   lotusFl: { c: 0xf3a6c0, t: 'l', snow: 0, side: 2 },
   koi:     { c: 0xffffff, t: 'b', snow: 0 },
 };
+function freeArr() { this.array = null; }
 const MATS = [];       // 所有实例化的材质（统一更新季节/夜色/透明度）
 const MESHES = [];     // {mesh, part, matId}
 const PARTS = {};      // part id → {meshes:[], visible}
@@ -73,9 +74,9 @@ const DETAIL = {
   plaster: 'float a=wn(vec2(q.x*3.,q.y*.4)),b=a,c=wn(q*9.);wlH=c;diffuseColor.rgb*=(.92+.08*a)*(.96+.06*c);diffuseColor.rgb*=mix(vec3(.74,.78,.74),vec3(1.),smoothstep(.55,1.5,vWp.y+b*.5));',
   rock: 'float a=wn(q*1.3),b=wn(q*9.);diffuseColor.rgb*=(.7+.4*a)*(.82+.3*b);',
   bark: 'diffuseColor.rgb*=.76+.4*wn(vec2(q.x*16.,q.y*1.6));',
-  lawn: 'float a=wn(vWp.xz*.06);diffuseColor.rgb*=.84+.3*a;',
+  lawn: 'float a=wn(vWp.xz*.06),b=wn(vWp.xz*.9),c=wn(vWp.xz*4.3+1.7);float fd=clamp(1.-.007/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.84+.3*a)*mix(1.,.88+.14*b+.12*c,fd);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.08,1.02,.8),smoothstep(.55,.8,wn(vWp.xz*.021+5.))*.35);',
   canopy: 'diffuseColor.rgb*=.7+.62*wn(vWp.xy*.55)*wn(vWp.zy*.6+3.7);',
-  hill: 'float a=wn(vWp.xz*.009),b=wn(vWp.xz*.07);diffuseColor.rgb*=.76+.26*a+.2*b;'
+  hill: 'float a=wn(vWp.xz*.009),b=wn(vWp.xz*.07),c=wn(vWp.xz*.13),e=wn(vWp.xz*.47+3.1);float fd=clamp(1.-.0016/gl_FragCoord.w,0.,1.);diffuseColor.rgb*=(.9+.1*a+.1*b*fd)*mix(1.,.76+.28*c+.24*e,fd);'
 };
 function patchMat(m, d) {
   const dt = d.dt && DETAIL[d.dt], bump = dt && d.t === 'p' && d.bump;
@@ -88,10 +89,11 @@ function patchMat(m, d) {
       .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + (d.sway ? 'transformed=aSw.xyz+(transformed-aSw.xyz)*uLeaf;float ph=uTime*1.25+aSw.x*.31+aSw.z*.27;transformed.x+=sin(ph)*aSw.w*.34*uWind;transformed.z+=cos(ph*.83+1.3)*aSw.w*.26*uWind;' : '') + 'vWp=(modelMatrix*vec4(transformed,1.)).xyz;');
     let fs = 'varying float vSnow;varying vec3 vWp,vWn;\nuniform sampler2D uNz;\nfloat wn(vec2 p){return clamp((texture2D(uNz,p*.1667).r-.5)*2.1+.5,0.,1.);}\n' + sh.fragmentShader
       .replace('#include <color_fragment>', '#include <color_fragment>\nfloat wlH=0.;' + (dt ? '{vec3 an=abs(vWn);vec2 q=an.y>.55?vWp.xz:(an.x>an.z?vWp.zy:vWp.xy);' + dt + '}' : '') + '\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(.93,.95,.97),vSnow);');
+    if (d.tex) fs = fs.replace('reflectedLight.directDiffuse = ( gl_FrontFacing ) ? vLightFront : vLightBack;', 'reflectedLight.directDiffuse = max(vLightFront,vLightBack)*.74+min(vLightFront,vLightBack)*.26;');
     if (bump) fs = fs.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n{vec3 wsx=dFdx(vViewPosition),wsy=dFdy(vViewPosition);float whx=dFdx(wlH),why=dFdy(wlH);vec3 wr1=cross(wsy,normal),wr2=cross(normal,wsx);float wdet=dot(wsx,wr1);normal=normalize(abs(wdet)*normal-' + d.bump.toFixed(4) + '*(1.-vSnow)*sign(wdet)*(whx*wr1+why*wr2));}');
     sh.fragmentShader = fs;
   };
-  m.customProgramCacheKey = () => [d.dt || '', d.bump || 0, d.sway || 0, d.t].join('|');
+  m.customProgramCacheKey = () => [d.dt || '', d.bump || 0, d.sway || 0, d.t, d.tex ? 1 : 0].join('|');
 }
 // 叶片贴图：画布上画出一簇叶形（带透明），按季节色相乘
 const LEAFTEX = {};
@@ -182,7 +184,7 @@ class Builder {
       const mesh = new THREE.Mesh(g, makeMat(k.mat, null, k.tex));
       if (k.tex) { g.setAttribute('uv', new THREE.Float32BufferAttribute(k.uv, 2)); mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: mesh.material.map, alphaTest: .28, side: THREE.DoubleSide }); }
       mesh.castShadow = o.cast !== false; mesh.receiveShadow = o.receive !== false;
-      if (!o.local) g.computeBoundingSphere();
+      g.computeBoundingSphere(); for (const n in g.attributes) g.attributes[n].onUpload(freeArr);   // 上传显卡后释放内存里的副本
       regMesh(mesh, k.part, k.mat); root.add(mesh); out.push(mesh);
     }
     this.b.clear(); return out;

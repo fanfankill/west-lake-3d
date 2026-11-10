@@ -45,7 +45,7 @@ function applyEnv() {
   for (const m of MATS) { const u = m.userData, d = u.d;
     if (u.season) S4c(u.season, s, m.color); if (u.glow) m.emissive.copy(u.glow).multiplyScalar(night * d.gi); if (d.leaf) u.leafU.value = S4n(d.leaf, s); }
   let cs = 0; for (const e of MESHES) if (e.matId && MD[e.matId].leaf) { const c = e.mesh.material.userData.leafU.value > .3; e.mesh.castShadow = c; cs += c ? 1 : 0; } WL.castSig = cs;
-  glowU.uOn.value = night; poolMat.opacity = night * .5; for (const l of nightLights) l.intensity = night * l.userData.i;
+  glowU.uOn.value = night; poolMat.opacity = night * .5; for (const l of nightLights) l.intensity = night * l.userData.i; for (const h of WL.nightHooks) h(night);
   updateLotus(s);
 }
 function applyOpacity() {
@@ -144,11 +144,12 @@ function frame(dt) {
     if (sig !== WL.shSig || WL.shadowDirty) { WL.shSig = sig; WL.shadowDirty = false; renderer.shadowMap.needsUpdate = true; } }
   // 飘落物围绕视点
   camera.getWorldDirection(_fw); for (const k in FL) { const u = FL[k].userData.u; u.uC.value.copy(camera.position).addScaledVector(_fw, u.uBox.value.x * .36); if (k === 'fly') u.uC.value.y = 2.2; else u.uC.value.y = Math.max(u.uC.value.y, u.uBox.value.y * .42); FL[k].visible = u.uOp.value > .01; }
-  boats.forEach(b => { b.grp.position.y = Math.sin(t * .9 + b.ph) * .03; b.grp.rotation.z = Math.sin(t * .7 + b.ph) * .022; b.grp.rotation.x = Math.sin(t * .55 + b.ph * 2) * .012; });
+  boats.forEach(b => { if (b.loop) { const L = b.loop, a = L[4] + t * L[5], x = L[0] + Math.cos(a) * L[2], z = L[1] + Math.sin(a) * L[3]; b.grp.position.x = x; b.grp.position.z = z; b.grp.rotation.y = -Math.atan2(Math.cos(a) * L[3] * Math.sign(L[5]), -Math.sin(a) * L[2] * Math.sign(L[5])); if (glow) { const fx = Math.cos(b.grp.rotation.y), fz = -Math.sin(b.grp.rotation.y); glow.geometry.attributes.position.setXYZ(b.gi, x + fx * 1.52 * (b.sc || 1), 1.5 * (b.sc || 1), z + fz * 1.52 * (b.sc || 1)); glow.geometry.attributes.position.needsUpdate = true; } }
+    b.grp.position.y = Math.sin(t * .9 + b.ph) * .03; b.grp.rotation.z = Math.sin(t * .7 + b.ph) * .022; b.grp.rotation.x = Math.sin(t * .55 + b.ph * 2) * .012; });
   updateKoi(dt, t); updateLanterns(dt, t); ripGate();
   sky.position.copy(camera.position); water.position.set(camera.position.x, 0, camera.position.z); water.updateMatrixWorld();
   renderer.shadowMap.autoUpdate = false;
-  if (water.visible) renderReflection();
+  if (water.visible && (WL.film || !WL.reflHalf || (WL.reflN = (WL.reflN | 0) + 1) & 1)) renderReflection();   // 机器吃力时倒影隔帧更新
   renderer.render(scene, camera);
   if (WL.post) WL.post();
 }
@@ -156,5 +157,5 @@ let last = 0, slow = 0, acc = 0, nfr = 0;
 function loop(now) {
   requestAnimationFrame(loop); if (WL.film) return;
   const dt = Math.min((now - last) / 1000 || .016, .1); last = now; frame(dt);
-  acc += dt; nfr++; if (acc > 2) { const avg = acc / nfr; acc = 0; nfr = 0; if (avg > .045 && slow < 3) { slow++; if (PR > 1) PR = Math.max(1, PR * .75); else if (RS > .35) RS = .35; else renderer.shadowMap.enabled = false, MATS.forEach(m => m.needsUpdate = true); resize(); } }
+  acc += dt; nfr++; if (acc > 2) { const avg = acc / nfr; acc = 0; nfr = 0; if (avg > .045 && slow < 5) { slow++; if (PR > 1.3) PR = Math.max(1, PR * .75); else if (!WL.reflHalf) WL.reflHalf = 1; else if (PR > 1) PR = 1; else if (RS > .35) RS = .35; else renderer.shadowMap.enabled = false, MATS.forEach(m => m.needsUpdate = true); resize(); } }
 }

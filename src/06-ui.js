@@ -16,11 +16,18 @@ const VIEWS = [
   { id: 'autumn', n: '秋色满堤', tag: '秋', p: [-30, 13, -44], l: [12, 5, -86], m: { s: 2, t: 0 }, txt: '银杏转金、槭叶转红、悬铃木转褐，香樟依旧浓绿。北山街与杨公堤的秋色，大抵如此。' },
   { id: 'snow', n: '亭桥残雪', tag: '冬', p: [-3, 7.5, 21], l: [-21, 2, -4], m: { s: 3, t: 0, r: 0 }, txt: '雪霁天晴，瓦垄、栏板与石板上都压着雪，向阳处先化，远望桥面似断非断，正是“断桥残雪”的意思。' },
   { id: 'leifeng', n: '雷峰夕照', tag: '黄昏', p: [-46, 6, 30], l: [-120, 20, 170], m: { t: .5 }, txt: '雷峰塔立在南岸夕照山上，吴越国时始建，1924 年倒塌，2002 年重建，八面五层。日落时塔影与晚霞同框。' },
-  { id: 'santan', n: '三潭印月', tag: '月夜', p: [-64, 2.3, 93], l: [-94, 4.5, 57], m: { s: 2, t: 1 }, txt: '湖中三座石塔，高约两米，球形塔身中空、环开五个圆孔。中秋夜塔内点烛，孔中透出的光映在水里，与月影难分。' },
+  { id: 'santan', n: '三潭印月', tag: '月夜', p: [-186, 2.4, 174], l: [-222, 4.5, 127], m: { s: 2, t: 1 }, txt: '湖中三座石塔，高约两米，球形塔身中空、环开五个圆孔。中秋夜塔内点烛，孔中透出的光映在水里，与月影难分。' },
   { id: 'baochu', n: '保俶塔影', tag: '远山', p: [-22, 8, -4], l: [-56, 34, -300], txt: '北岸宝石山上的保俶塔，六面七层实心砖塔，瘦削挺拔。老话说“雷峰如老衲，保俶如美人”。' },
-  { id: 'sudi', n: '苏堤春晓', tag: '远景', p: [-70, 12, -20], l: [-260, 6, -70], m: { s: 0, t: 0 }, txt: '苏轼疏浚西湖时用淤泥筑成的长堤，近三公里，六座石拱桥。春天远望，是一条粉绿相间的线。' },
+  { id: 'sudi', n: '苏堤春晓', tag: '春', p: [-470, 16, -80], l: [-570, 4, -30], m: { s: 0, t: 0 }, txt: '苏轼疏浚西湖时用淤泥筑成的长堤，近三公里，自北而南六座石拱桥：跨虹、东浦、压堤、望山、锁澜、映波。堤上一株杨柳一株桃。' },
+  { id: 'duanqiao', n: '断桥残雪', tag: '冬', p: [-78, 15, -578], l: [5, 5, -638], m: { s: 3, t: 0, r: 0 }, txt: '白堤东头的单孔石拱桥。雪后桥的阳面先化，远望桥身似断非断；《白蛇传》里许仙与白娘子也在这里相遇。' },
+  { id: 'pinghu', n: '平湖秋月', tag: '秋夜', p: [-128, 5, -514], l: [-178, 5, -550], m: { s: 2, t: 1 }, txt: '孤山东南角伸进湖里的一方平台，三面临水。秋夜月出，湖平如镜，是看月亮最开阔的地方。' },
+  { id: 'gushan', n: '孤山', tag: '岛', p: [-300, 46, -430], l: [-335, 8, -562], txt: '西湖里最大的岛，山高不过三十多米。东接白堤、西连西泠桥，山后放鹤亭一带以梅花闻名。' },
+  { id: 'xiaoying', n: '小瀛洲', tag: '岛', p: [-128, 46, 128], l: [-215, 2, 44], txt: '用浚湖的淤泥堆成的环形岛，“湖中有岛，岛中有湖”。九曲桥贯穿内湖，岛南水面立着三座石塔。' },
+  { id: 'huxin', n: '湖心亭', tag: '岛', p: [-246, 20, -168], l: [-300, 5, -231], txt: '湖心的小岛与重檐楼阁，西湖三岛里建得最早。张岱《湖心亭看雪》写的就是这里。' },
+  { id: 'nanping', n: '南屏晚钟', tag: '黄昏', p: [-52, 22, 462], l: [-128, 7, 560], m: { t: .5 }, txt: '南屏山下的净慈寺，黄墙殿宇。傍晚寺钟一响，山谷回应，声传湖上。点“听南屏晚钟”可以敲一下。' },
 ];
-const LABELS = [['qiao', -13, 2.4, -3], ['ting', -36, 10.8, -6], ['lang', 5.5, 5.4, -14], ['xie', .4, 6.6, -38.9], ['arch', 13, 4.8, 44], ['gate', 24, 4.4, 0], ['pier', 1.4, 2, 21], ['santan', -92, 3.6, 53], ['leifeng', -330, 132, 560], ['sudi', -560, 22, -120]];
+const LABELS = [['qiao', -13, 2.4, -3], ['ting', -36, 10.8, -6], ['lang', 5.5, 5.4, -14], ['xie', .4, 6.6, -38.9], ['arch', 13, 4.8, 44], ['gate', 24, 4.4, 0], ['pier', 1.4, 2, 21], ['santan', -215, 5, 128], ['leifeng', -330, 132, 560], ['sudi', -560, 22, -120],
+  ['duanqiao', 5, 13, -638], ['pinghu', -176, 11, -548], ['gushan', -345, 40, -566], ['xiaoying', -215, 13, 42], ['huxin', -300, 15, -231], ['nanping', -128, 20, 560]];
 const PGROUPS = [
   ['亭', [
     ['pv-finial', '宝顶', [-29, 10.6, -.5], [-36, 9.3, -6], '攒尖顶各条脊在顶端汇合，用宝顶压住收束，既是造型的句号，也防雨水从顶心渗入。'],
@@ -80,11 +87,20 @@ const PGROUPS = [
     ['shrubs', '灌木', [5, 2.4, -72], [9, .9, -76], '路边的杜鹃春天开花，墙下是修剪成团的桂花。'],
     ['bamboo', '竹', [22, 3.4, 4], [28.5, 4, 7], '月洞门后两丛竹，为白墙添一笔绿影。'],
   ]],
+  ['环湖', [
+    ['bai', '白堤与断桥', [-60, 26, -545], [-40, 3, -618], '白堤横在外湖与北里湖之间，中有锦带桥，东头是断桥。堤上桃柳相间。'],
+    ['gushan', '孤山', [-300, 46, -430], [-335, 8, -562], '岛上有山、有楼阁、有梅林，东南角是平湖秋月的临水平台，西端经西泠桥连到苏堤。'],
+    ['xiaoying', '小瀛洲', [-128, 46, 128], [-215, 2, 44], '环形的岛，中间留出内湖，十字堤与曲桥相连。'],
+    ['huxin', '湖心亭与阮公墩', [-246, 20, -168], [-300, 5, -231], '湖心亭是重檐楼阁的小岛；西面更小的阮公墩是清代疏浚西湖时堆成的。'],
+    ['temple', '净慈寺', [-52, 22, 462], [-128, 7, 560], '黄墙围起的三进殿宇，左右钟鼓二楼。'],
+    ['north', '北山街', [-150, 46, -610], [-140, 8, -780], '北岸山脚下的一排老房子。'],
+    ['city', '城东天际线', [-90, 70, 0], [700, 40, 0], '湖东是城区，近湖低、远处高，入夜亮起万家灯火。'],
+  ]],
   ['远景', [
-    ['santan', '三潭石塔', [-60, 2.6, 34], [-92, 1.2, 53], '湖中三座石塔，球形塔身环开五孔。'],
+    ['santan', '三潭石塔', [-186, 2.4, 174], [-222, 4.5, 127], '湖中三座石塔，球形塔身环开五孔。'],
     ['far-leifeng', '雷峰塔', [-46, 6, 30], [-120, 20, 170], '夕照山上的雷峰塔，入夜通体金黄。'],
     ['far-baochu', '保俶塔', [-22, 8, -4], [-56, 34, -300], '宝石山上的保俶塔。'],
-    ['far-su', '苏堤', [-70, 12, -20], [-260, 6, -70], '长堤卧波，桃柳成行，石拱桥隔出里外湖。'],
+    ['far-su', '苏堤', [-470, 16, -80], [-570, 4, -30], '长堤卧波，桃柳成行，石拱桥隔出里外湖。'],
     ['far-hill', '群山', [10, 30, 30], [-200, 30, 40], '三面云山一面城：近山青，远山淡，层层退入雾中。'],
   ]],
 ];
@@ -116,7 +132,7 @@ function sceneTheme() { const n = ST.tod > .62; if (n !== sceneTheme.v) { sceneT
 function showCard(title, tag, txt, btns) { $('#c-title').textContent = title; $('#c-tag').textContent = tag; $('#c-text').textContent = txt; const b = $('#c-btns'); b.innerHTML = ''; (btns || []).forEach(x => { const e = document.createElement('button'); e.textContent = x[0]; e.onclick = x[1]; b.appendChild(e); }); $('#card').hidden = false; }
 function markSel(id) { sel = id; $$('.item').forEach(e => e.classList.toggle('on', e.dataset.id === id)); }
 function setFocus(f) { ST.focus = f; applyOpacity(); }
-function stopModes() { if (walk.on) stopWalk(); }
+function stopModes() { if (walk.on) stopWalk(); if (lap.on) stopLap(); }
 function selectView(id, quiet) {
   const v = VIEWS.find(x => x.id === id); if (!v) return; stopModes(); setFocus(null); markSel(id);
   if (v.m) { if (v.m.s != null) setSeason(v.m.s); if (v.m.t != null) setTod(v.m.t); if (v.m.r != null) setRain(v.m.r); }
@@ -142,7 +158,12 @@ function buildUI() {
   $$('#wx button').forEach(b => b.onclick = () => setRain(+b.dataset.r));
   $('#op').oninput = e => { ST.opacity = e.target.value / 100; $('#op-v').textContent = e.target.value + '%'; applyOpacity(); };
   $('#a-walk').onclick = () => walk.on ? stopWalk() : startWalk();
-  $('#a-cycle').onclick = () => cycle(!cyc.on);
+  $('#a-cycle').onclick = () => { if (lap.on) stopLap(); cycle(!cyc.on); };
+  $('#a-lap').onclick = () => lap.on ? stopLap() : startLap();
+  $('#a-imm').onclick = () => setImmersive(true);
+  $('#imm-exit').onclick = () => setImmersive(false);
+  window.addEventListener('pointermove', () => { if (document.body.classList.contains('immersive')) pokeImm(); });
+  window.addEventListener('pointerdown', () => { if (document.body.classList.contains('immersive')) pokeImm(); });
   $('#a-bell').onclick = bell;
   $('#a-reset').onclick = () => selectView('all');
   $('#a-labels').onclick = e => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', on); $('#labels').hidden = !on; };
@@ -152,7 +173,7 @@ function buildUI() {
   const L = $('#labels'); LABELS.forEach(a => { const v = VIEWS.find(x => x.id === a[0]), e = document.createElement('button'); e.className = 'lb'; e.textContent = v.n; e.onclick = () => selectView(v.id); L.appendChild(e); a.el = e; a.v = new V3(a[1], a[2], a[3]); });
   window.addEventListener('resize', resize);
   window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id !== sel && VIEWS.some(v => v.id === id)) selectView(id); });
-  window.addEventListener('keydown', e => { if (e.key === 'Escape') { setFocus(null); selectView('all'); } });
+  window.addEventListener('keydown', e => { if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return; if (e.key === 'Escape') { if (document.body.classList.contains('immersive')) setImmersive(false); else { setFocus(null); selectView('all'); } } else if (e.key === 'h' || e.key === 'H') setImmersive(!document.body.classList.contains('immersive')); });
 }
 const _pv = new V3();
 function updateLabels() {
@@ -183,8 +204,26 @@ function walkAt(t) {
   walk.l.set(walk.p.x + Math.sin(yaw) * Math.cos(pit) * 10, walk.p.y + Math.sin(pit) * 10, walk.p.z + Math.cos(yaw) * Math.cos(pit) * 10);
   CAM.free = { p: walk.p, l: walk.l }; CAM.fly = null; ST.tod = TG.tod = walkTod(t);
 }
-function startWalk() { cycle(false); setFocus(null); walk.on = true; walk.t = 0; $('#a-walk').setAttribute('aria-pressed', true); $('#a-walk').textContent = '结束漫步'; $('#card').hidden = false; showCard('湖畔漫步', '从午后走到入夜', '镜头贴着湖面靠岸，踏上九曲桥，一折一景走进亭中；日头西沉，灯一盏盏亮起来，最后回望水里的亭影。拖动画面可随时接管视角。', [['结束漫步', stopWalk]]); markSel(null); }
+function startWalk() { cycle(false); if (lap.on) stopLap(); setFocus(null); walk.on = true; walk.t = 0; $('#a-walk').setAttribute('aria-pressed', true); $('#a-walk').textContent = '结束漫步'; $('#card').hidden = false; showCard('湖畔漫步', '从午后走到入夜', '镜头贴着湖面靠岸，踏上九曲桥，一折一景走进亭中；日头西沉，灯一盏盏亮起来，最后回望水里的亭影。拖动画面可随时接管视角。', [['结束漫步', stopWalk]]); markSel(null); }
 function stopWalk() { if (!walk.on) return; walk.on = false; $('#a-walk').setAttribute('aria-pressed', false); $('#a-walk').textContent = '湖畔漫步'; if (CAM.free) { const o = poseToOrbit(walk.p.toArray(), walk.l.toArray()); CAM.free = null; Object.assign(CAM.d, { th: o.th, ph: o.ph, r: o.r }); CAM.d.t.copy(o.t); CAM.t.copy(o.t); CAM.th = o.th; CAM.ph = o.ph; CAM.r = o.r; } setTod(ST.tod > .75 ? 1 : ST.tod > .3 ? .5 : 0); }
+// 环湖一周：沿湖心一侧的闭合航线匀速飞行，东岸起春、南岸入夏、西堤逢秋、北岸落雪，回到东岸又是一春
+const LAP = [[-75, 16, 10], [-62, 22, 150], [-110, 30, 310], [-225, 34, 400], [-390, 26, 360], [-480, 22, 200], [-500, 20, 0], [-492, 22, -200], [-460, 26, -400], [-385, 28, -470], [-225, 22, -496], [-85, 20, -545], [-28, 24, -380], [-58, 20, -160]];
+const lapCurve = new THREE.CatmullRomCurve3(LAP.map(p => new V3(p[0], p[1], p[2])), true, 'centripetal'), LAP_T = 180, _la = new V3();
+const SIGHTS = [['集贤亭 · 九曲桥', -36, -6], ['雷峰塔', -330, 560], ['净慈寺 · 南屏晚钟', -128, 560], ['小瀛洲 · 三潭印月', -215, 70], ['苏堤', -545, 250], ['苏堤', -575, -150], ['阮公墩', -410, -110], ['湖心亭', -300, -231], ['孤山', -360, -560], ['平湖秋月', -176, -548], ['白堤', -80, -600], ['断桥', 5, -638]];
+const lap = { on: false, t: 0, cap: '' };
+function lapAt(u) {
+  u = ((u % 1) + 1) % 1; lapCurve.getPointAt(u, walk.p); lapCurve.getPointAt((u + .05) % 1, _la);
+  const ox = _la.x + 280, oz = _la.z + 80, ol = Math.hypot(ox, oz) || 1; walk.l.set(_la.x + ox / ol * 42, 6, _la.z + oz / ol * 42);
+  CAM.free = { p: walk.p, l: walk.l }; CAM.fly = null; ST.season = TG.season = u * 4;
+}
+function startLap() { cycle(false); if (walk.on) stopWalk(); setFocus(null); lap.on = true; $('#a-lap').setAttribute('aria-pressed', true); $('#a-lap').textContent = '结束环湖'; markSel(null); $('#card').hidden = true; }
+function stopLap() { if (!lap.on) return; lap.on = false; $('#a-lap').setAttribute('aria-pressed', false); $('#a-lap').textContent = '环湖一周'; $('#cap').style.opacity = 0; lap.cap = '';
+  if (CAM.free) { const o = poseToOrbit(walk.p.toArray(), walk.l.toArray()); CAM.free = null; Object.assign(CAM.d, { th: o.th, ph: o.ph, r: o.r }); CAM.d.t.copy(o.t); CAM.t.copy(o.t); CAM.th = o.th; CAM.ph = o.ph; CAM.r = o.r; }
+  const k = ((Math.round(ST.season) % 4) + 4) % 4; ST.season = ((ST.season % 4) + 4) % 4; TG.season = ST.season; setSeason(k); }
+// 沉浸模式：隐藏全部界面，只留画面；移动鼠标或轻点时角上浮出“显示界面”
+let immT = 0;
+function setImmersive(on) { document.body.classList.toggle('immersive', on); $('#a-imm').setAttribute('aria-pressed', on); if (on) pokeImm(); }
+function pokeImm() { const e = $('#imm-exit'); e.classList.add('show'); clearTimeout(immT); immT = setTimeout(() => e.classList.remove('show'), 2600); }
 const cyc = { on: false, t: 0 };
 function cycle(on) { cyc.on = on; cyc.t = 0; $('#a-cycle').setAttribute('aria-pressed', on); }
 
@@ -196,9 +235,11 @@ function bell() {
 }
 
 WL.onTap = (cx, cy) => { const p = pickWater(cx, cy); if (!p) return; addRipple(p[0], p[1], 1); feed = { x: p[0], z: p[1], t: WL.time }; if (ENV.night > .5) releaseLantern(p[0], p[1]); };
-WL.onUserMove = () => { if (walk.on) stopWalk(); };
+WL.onUserMove = () => { if (walk.on) stopWalk(); if (lap.on) stopLap(); };
 WL.tick = (dt, t) => {
   if (walk.on) { walk.t += dt * .62; walkAt(walk.t); if (walk.t >= WALK_T) { stopWalk(); selectView('ting'); setTod(1); } if (Math.floor(walk.t * 1.3) !== Math.floor((walk.t - dt * .62) * 1.3) && walk.t > 8.6 && walk.t < 23) { /* 脚边的水纹 */ addRipple(walk.p.x + rr(-3, 3), walk.p.z + rr(-3, 3), .35); } }
+  if (lap.on) { lap.t += dt; lapAt(lap.t / LAP_T); let best = '', bd = 230; for (const s of SIGHTS) { const d = Math.hypot(s[1] - walk.p.x, s[2] - walk.p.z); if (d < bd) { bd = d; best = s[0]; } }
+    if (best !== lap.cap) { lap.cap = best; const c = $('#cap'); c.style.opacity = 0; clearTimeout(lap.ct); if (best) lap.ct = setTimeout(() => { c.textContent = best; c.style.opacity = 1; }, 600); } }
   if (cyc.on) { if (!CAM.fly && !CAM.free && !walk.on) CAM.d.th += dt * .1; cyc.t += dt; if (cyc.t > 4.6 && ST.season === TG.season) { cyc.t = 0; setSeason((curSeason() + 1) % 4); } }
   if (ST.rain > .5 && Math.random() < dt * 2.5) { camera.getWorldDirection(_fw); addRipple(camera.position.x + _fw.x * 14 + rr(-10, 10), camera.position.z + _fw.z * 14 + rr(-10, 10), .3); }
   sceneTheme();
@@ -233,8 +274,9 @@ WL.filmFrame = (t, dt) => {
 };
 
 function init() {
-  buildShore(); buildBridge(); buildPavilion(); buildCorridor(); buildHall(); buildArchBridge(); buildWall(); buildFacilities(); buildFlora(); buildFar();
-  B.flush(world).forEach(m => { const p = m.userData.part; if (p.startsWith('far-')) { m.castShadow = false; m.receiveShadow = false; } });
+  // 分批合并上传，避免一次攒下全部顶点数据
+  const fl = () => B.flush(world).forEach(m => { const p = m.userData.part; if (p.startsWith('far-')) { m.castShadow = false; m.receiveShadow = false; } else if (p === 'north' || p === 'temple') m.castShadow = false; });
+  buildShore(); buildBridge(); buildPavilion(); buildCorridor(); buildHall(); buildArchBridge(); buildWall(); buildFacilities(); fl(); buildFlora(); fl(); buildFar(); fl(); buildLake(); fl();
   ['shrubs', 'bench', 'rockery', 'wall', 'bamboo', 'path', 'lawn'].forEach(id => PARTS[id] && PARTS[id].meshes.forEach(m => hideInRefl.push(m)));   // 倒影里看不到的部件不必再画一遍
   buildLotus(); buildKoi(); buildBoat(bankX(20) - 2.5, 21.3, PI / 2 + .12); buildBoat(bankX(26) - 3.2, 28.5, PI / 2 - .3);
   buildLanterns(); buildGlow();
@@ -245,7 +287,7 @@ function init() {
   frame(.016); $('#veil').classList.add('off'); WL.ready = true; requestAnimationFrame(loop);
 }
 requestAnimationFrame(() => setTimeout(() => { try { init(); } catch (e) { console.error(e); $('#veil').textContent = '场景加载失败：' + e.message; } }, 30));
-WL.api = { selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
+WL.api = { lapAt, startLap, setImmersive, selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
 WL.sync = () => { const gl = renderer.getContext(), px = new Uint8Array(4); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); return px[0]; };
 WL.info = () => ({ tris: renderer.info.render.triangles, calls: renderer.info.render.calls, meshes: MESHES.length, mats: MATS.length });
 WL.r = renderer; WL.water = water;

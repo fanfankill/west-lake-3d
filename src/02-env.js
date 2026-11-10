@@ -62,7 +62,7 @@ const waterN = (() => {
 })();
 
 // 倒影
-const reflRT = new THREE.WebGLRenderTarget(512, 512, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+const reflRT = new THREE.WebGLRenderTarget(WL.film ? 512 : 1024, WL.film ? 512 : 1024, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
 const reflCam = new THREE.PerspectiveCamera();
 const texMat = new Matrix4();
 const NR = 8, rip = []; for (let i = 0; i < NR; i++) rip.push(new THREE.Vector4(0, 0, -99, 0));
@@ -95,7 +95,8 @@ vec2 o=f-(vec2(h21(id+3.1),h21(id+7.7))-.5)*.5;float d=length(o);float ring=sin(
 vec3 N=normalize(vec3(g.x,1.,g.y));
 float ndv=max(dot(N,V),0.);float fr=mix(.14,1.,pow(1.-ndv,3.2));
 vec2 ruv=vM.xy/vM.w+vec2(gd.x*.04,gd.y*.075)/(1.+dist*.012);
-vec3 refl=texture2D(tR,clamp(ruv,.001,.999)).rgb;
+vec2 rst=vec2(0.,.011*rough)/(1.+dist*.01);ruv=clamp(ruv,.002,.998);
+vec3 refl=texture2D(tR,ruv).rgb*.46+texture2D(tR,clamp(ruv+rst,.002,.998)).rgb*.27+texture2D(tR,clamp(ruv-rst,.002,.998)).rgb*.27;
 vec3 body=uDeep*(.85+.3*pch)+uSky*.1;
 vec3 col=mix(body,refl,fr);
 vec3 R=reflect(-V,N);float rl=max(dot(R,uLight),0.);
