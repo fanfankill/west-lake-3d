@@ -12,7 +12,7 @@ const c0 = +(process.argv[3] || 0), c1 = +(process.argv[4] || Math.ceil(TOTAL / 
   const T0 = Date.now();
   for (let c = c0; c <= c1; c++) {
     const tmp = path.join(OUT, `part${c}.tmp.mp4`), fin = path.join(OUT, `part${c}.mp4`);
-    const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-crf', '17', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-r', String(FPS), tmp], { stdio: ['pipe', 'inherit', 'inherit'] });
+    const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-crf', '14', '-preset', 'veryfast', '-bf', '0', '-g', '30', '-pix_fmt', 'yuv420p', '-r', String(FPS), tmp], { stdio: ['pipe', 'inherit', 'inherit'] });
     const done = new Promise((res, rej) => ff.on('exit', code => code === 0 ? res() : rej(new Error('ffmpeg ' + code))));
     for (let i = c * CH; i < Math.min((c + 1) * CH, TOTAL); i++) {
       await page.evaluate(([t, dt]) => { WL.filmFrame(t, dt); WL.sync(); }, [i / FPS, 1 / FPS]);

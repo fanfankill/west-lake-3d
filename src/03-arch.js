@@ -128,7 +128,8 @@ function buildShore() {
   for (let z = INLET[1] + 1.3; z <= 202; z += 1.3) bank.push([bankX(z), z]);
   // 草地
   const extN = [[-60, -1150], [50, -760], [28, -430], [10, -290]], extS = [[14, 300], [44, 450], [0, 640], [-130, 800]];
-  const all = extN.concat(bank, extS), sh = new THREE.Shape(); all.forEach((p, i) => i ? sh.lineTo(p[0], -p[1]) : sh.moveTo(p[0], -p[1])); sh.lineTo(3200, -900); sh.lineTo(3200, 1150); sh.closePath();
+  const all = extN.concat(bank, extS), sh = new THREE.Shape(); all.forEach((p, i) => i ? sh.lineTo(p[0], -p[1]) : sh.moveTo(p[0], -p[1])); sh.lineTo(760, -1150); sh.lineTo(760, 800); sh.closePath();
+  { const fg = new THREE.PlaneGeometry(2600, 2400, 8, 8).rotateX(-PI / 2); fg.translate(2055, Y0 - .03, -175); B.add('lawn', 'farLand', fg, null, 1); }   // 远处的平地另用一块粗网格，免得近处草地跟着一个几公里的大三角形
   [extN.concat([bank[0]]), [bank[bank.length - 1]].concat(extS)].forEach(ln => { for (let i = 0; i < ln.length - 1; i++) { const a = ln[i], b = ln[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
     B.seg('bank', 'stone', [a[0], -.5, a[1]], [b[0], -.5, b[1]], .8, 2, .85);
     for (let s = 6; s < l; s += 9) { const x = lerp(a[0], b[0], s / l), z = lerp(a[1], b[1], s / l); if (Math.abs(z) < 330) { treeLite(['camphor', 'plane'][(s / 9 | 0) % 2], x + rr(5, 9), z, rr(.7, .9)); treeLite('camphor', x + rr(18, 34), z + rr(-4, 4), rr(.9, 1.2)); continue; } blob('trees', (s / 9 | 0) % 4 === 1 ? 'farPeach' : 'farTree', x + rr(4, 9), Y0 + rr(4, 6), z + rr(-2, 2), rr(4, 6), rr(4.5, 7), rr(4, 6), rr(.85, 1.1), 0, 1); if (s % 2 < 1) blob('trees', 'farTree', x + rr(16, 40), Y0 + rr(6, 9), z + rr(-4, 4), rr(7, 10), rr(7, 10), rr(7, 10), rr(.8, 1), 0, 1); } } });

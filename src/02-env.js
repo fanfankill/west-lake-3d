@@ -71,7 +71,11 @@ const waterU = {
   uLight: { value: ENV.lightDir }, uSpec: { value: ENV.spec }, uDeep: { value: new Color() }, uSky: { value: ENV.hor },
   uFog: { value: ENV.fog }, uFogD: { value: .001 }, uRip: { value: rip }, uRain: { value: 0 }, uWave: { value: 1 }, uOp: { value: 1 }, uNight: { value: 0 }, uRipOn: { value: 0 }
 };
-const water = new THREE.Mesh(new THREE.PlaneGeometry(7000, 7000).rotateX(-PI / 2), new THREE.ShaderMaterial({
+// 水面网格：近密远疏并跟随相机。若用一整块几公里的大三角形，世界坐标插值的精度不够，镜头一动水纹就会逐帧抖
+const waterGeo = (() => { const G = 112, pos = [], idx = []; for (let j = 0; j <= G; j++) for (let i = 0; i <= G; i++) { const u = i / G * 2 - 1, v = j / G * 2 - 1; pos.push(Math.sign(u) * Math.pow(Math.abs(u), 3.2) * 3800, 0, Math.sign(v) * Math.pow(Math.abs(v), 3.2) * 3800); }
+  for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) { const a = j * (G + 1) + i, b = a + 1, c = a + G + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); return g; })();
+const water = new THREE.Mesh(waterGeo, new THREE.ShaderMaterial({
   uniforms: waterU, transparent: false,
   vertexShader: 'uniform mat4 uTex;varying vec4 vM;varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vM=uTex*w;gl_Position=projectionMatrix*viewMatrix*w;}',
   fragmentShader: `uniform sampler2D tN,tR;uniform float uTime,uFogD,uRain,uWave,uOp,uNight,uRipOn;uniform vec3 uLight,uSpec,uDeep,uSky,uFog;uniform vec4 uRip[${NR}];
@@ -99,7 +103,7 @@ col+=uSpec*(pow(rl,700.)*7.+pow(rl,70.)*.4+pow(rl,10.)*.05);
 float fg=1.-exp(-dist*dist*uFogD*uFogD);col=mix(col,uFog,fg);
 gl_FragColor=vec4(col,uOp);}`
 }));
-water.renderOrder = 1; world.add(water); regMesh(water, 'water', null);
+water.renderOrder = 1; water.frustumCulled = false; world.add(water); regMesh(water, 'water', null);
 let ripI = 0;
 function addRipple(x, z, amp = 1) { rip[ripI].set(x, z, WL.time, amp); ripI = (ripI + 1) % NR; }
 function ripGate() { let on = 0; for (const r of rip) if (WL.time - r.z < 9) on = 1; waterU.uRipOn.value = on; }

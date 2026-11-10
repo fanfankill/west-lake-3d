@@ -146,7 +146,7 @@ function frame(dt) {
   camera.getWorldDirection(_fw); for (const k in FL) { const u = FL[k].userData.u; u.uC.value.copy(camera.position).addScaledVector(_fw, u.uBox.value.x * .36); if (k === 'fly') u.uC.value.y = 2.2; else u.uC.value.y = Math.max(u.uC.value.y, u.uBox.value.y * .42); FL[k].visible = u.uOp.value > .01; }
   boats.forEach(b => { b.grp.position.y = Math.sin(t * .9 + b.ph) * .03; b.grp.rotation.z = Math.sin(t * .7 + b.ph) * .022; b.grp.rotation.x = Math.sin(t * .55 + b.ph * 2) * .012; });
   updateKoi(dt, t); updateLanterns(dt, t); ripGate();
-  sky.position.copy(camera.position);
+  sky.position.copy(camera.position); water.position.set(camera.position.x, 0, camera.position.z); water.updateMatrixWorld();
   renderer.shadowMap.autoUpdate = false;
   if (water.visible) renderReflection();
   renderer.render(scene, camera);

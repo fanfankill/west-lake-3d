@@ -424,7 +424,11 @@ const waterU = {
   uLight: { value: ENV.lightDir }, uSpec: { value: ENV.spec }, uDeep: { value: new Color() }, uSky: { value: ENV.hor },
   uFog: { value: ENV.fog }, uFogD: { value: .001 }, uRip: { value: rip }, uRain: { value: 0 }, uWave: { value: 1 }, uOp: { value: 1 }, uNight: { value: 0 }, uRipOn: { value: 0 }
 };
-const water = new THREE.Mesh(new THREE.PlaneGeometry(7000, 7000).rotateX(-PI / 2), new THREE.ShaderMaterial({
+// 水面网格：近密远疏并跟随相机。若用一整块几公里的大三角形，世界坐标插值的精度不够，镜头一动水纹就会逐帧抖
+const waterGeo = (() => { const G = 112, pos = [], idx = []; for (let j = 0; j <= G; j++) for (let i = 0; i <= G; i++) { const u = i / G * 2 - 1, v = j / G * 2 - 1; pos.push(Math.sign(u) * Math.pow(Math.abs(u), 3.2) * 3800, 0, Math.sign(v) * Math.pow(Math.abs(v), 3.2) * 3800); }
+  for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) { const a = j * (G + 1) + i, b = a + 1, c = a + G + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); return g; })();
+const water = new THREE.Mesh(waterGeo, new THREE.ShaderMaterial({
   uniforms: waterU, transparent: false,
   vertexShader: 'uniform mat4 uTex;varying vec4 vM;varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vM=uTex*w;gl_Position=projectionMatrix*viewMatrix*w;}',
   fragmentShader: `uniform sampler2D tN,tR;uniform float uTime,uFogD,uRain,uWave,uOp,uNight,uRipOn;uniform vec3 uLight,uSpec,uDeep,uSky,uFog;uniform vec4 uRip[${NR}];
@@ -452,7 +456,7 @@ col+=uSpec*(pow(rl,700.)*7.+pow(rl,70.)*.4+pow(rl,10.)*.05);
 float fg=1.-exp(-dist*dist*uFogD*uFogD);col=mix(col,uFog,fg);
 gl_FragColor=vec4(col,uOp);}`
 }));
-water.renderOrder = 1; world.add(water); regMesh(water, 'water', null);
+water.renderOrder = 1; water.frustumCulled = false; world.add(water); regMesh(water, 'water', null);
 let ripI = 0;
 function addRipple(x, z, amp = 1) { rip[ripI].set(x, z, WL.time, amp); ripI = (ripI + 1) % NR; }
 function ripGate() { let on = 0; for (const r of rip) if (WL.time - r.z < 9) on = 1; waterU.uRipOn.value = on; }
@@ -655,7 +659,8 @@ function buildShore() {
   for (let z = INLET[1] + 1.3; z <= 202; z += 1.3) bank.push([bankX(z), z]);
   // 草地
   const extN = [[-60, -1150], [50, -760], [28, -430], [10, -290]], extS = [[14, 300], [44, 450], [0, 640], [-130, 800]];
-  const all = extN.concat(bank, extS), sh = new THREE.Shape(); all.forEach((p, i) => i ? sh.lineTo(p[0], -p[1]) : sh.moveTo(p[0], -p[1])); sh.lineTo(3200, -900); sh.lineTo(3200, 1150); sh.closePath();
+  const all = extN.concat(bank, extS), sh = new THREE.Shape(); all.forEach((p, i) => i ? sh.lineTo(p[0], -p[1]) : sh.moveTo(p[0], -p[1])); sh.lineTo(760, -1150); sh.lineTo(760, 800); sh.closePath();
+  { const fg = new THREE.PlaneGeometry(2600, 2400, 8, 8).rotateX(-PI / 2); fg.translate(2055, Y0 - .03, -175); B.add('lawn', 'farLand', fg, null, 1); }   // 远处的平地另用一块粗网格，免得近处草地跟着一个几公里的大三角形
   [extN.concat([bank[0]]), [bank[bank.length - 1]].concat(extS)].forEach(ln => { for (let i = 0; i < ln.length - 1; i++) { const a = ln[i], b = ln[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
     B.seg('bank', 'stone', [a[0], -.5, a[1]], [b[0], -.5, b[1]], .8, 2, .85);
     for (let s = 6; s < l; s += 9) { const x = lerp(a[0], b[0], s / l), z = lerp(a[1], b[1], s / l); if (Math.abs(z) < 330) { treeLite(['camphor', 'plane'][(s / 9 | 0) % 2], x + rr(5, 9), z, rr(.7, .9)); treeLite('camphor', x + rr(18, 34), z + rr(-4, 4), rr(.9, 1.2)); continue; } blob('trees', (s / 9 | 0) % 4 === 1 ? 'farPeach' : 'farTree', x + rr(4, 9), Y0 + rr(4, 6), z + rr(-2, 2), rr(4, 6), rr(4.5, 7), rr(4, 6), rr(.85, 1.1), 0, 1); if (s % 2 < 1) blob('trees', 'farTree', x + rr(16, 40), Y0 + rr(6, 9), z + rr(-4, 4), rr(7, 10), rr(7, 10), rr(7, 10), rr(.8, 1), 0, 1); } } });
@@ -1248,7 +1253,7 @@ function frame(dt) {
   camera.getWorldDirection(_fw); for (const k in FL) { const u = FL[k].userData.u; u.uC.value.copy(camera.position).addScaledVector(_fw, u.uBox.value.x * .36); if (k === 'fly') u.uC.value.y = 2.2; else u.uC.value.y = Math.max(u.uC.value.y, u.uBox.value.y * .42); FL[k].visible = u.uOp.value > .01; }
   boats.forEach(b => { b.grp.position.y = Math.sin(t * .9 + b.ph) * .03; b.grp.rotation.z = Math.sin(t * .7 + b.ph) * .022; b.grp.rotation.x = Math.sin(t * .55 + b.ph * 2) * .012; });
   updateKoi(dt, t); updateLanterns(dt, t); ripGate();
-  sky.position.copy(camera.position);
+  sky.position.copy(camera.position); water.position.set(camera.position.x, 0, camera.position.z); water.updateMatrixWorld();
   renderer.shadowMap.autoUpdate = false;
   if (water.visible) renderReflection();
   renderer.render(scene, camera);
