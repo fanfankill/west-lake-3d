@@ -160,7 +160,7 @@ function buildUI() {
   $('#a-walk').onclick = () => walk.on ? stopWalk() : startWalk();
   $('#a-cycle').onclick = () => { if (lap.on) stopLap(); cycle(!cyc.on); };
   $('#a-lap').onclick = () => lap.on ? stopLap() : startLap();
-  $('#a-imm').onclick = () => setImmersive(true);
+  $('#a-imm').onclick = () => setImmersive(true); $('#a-music').onclick = () => setMusic(!music.on, true); if (!BGM_B64) $('#a-music').hidden = true;
   $('#imm-exit').onclick = () => setImmersive(false);
   window.addEventListener('pointermove', () => { if (document.body.classList.contains('immersive')) pokeImm(); });
   window.addEventListener('pointerdown', () => { if (document.body.classList.contains('immersive')) pokeImm(); });
@@ -173,7 +173,7 @@ function buildUI() {
   const L = $('#labels'); LABELS.forEach(a => { const v = VIEWS.find(x => x.id === a[0]), e = document.createElement('button'); e.className = 'lb'; e.textContent = v.n; e.onclick = () => selectView(v.id); L.appendChild(e); a.el = e; a.v = new V3(a[1], a[2], a[3]); });
   window.addEventListener('resize', resize);
   window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id !== sel && VIEWS.some(v => v.id === id)) selectView(id); });
-  window.addEventListener('keydown', e => { if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return; if (e.key === 'Escape') { if (document.body.classList.contains('immersive')) setImmersive(false); else { setFocus(null); selectView('all'); } } else if (e.key === 'h' || e.key === 'H') setImmersive(!document.body.classList.contains('immersive')); });
+  window.addEventListener('keydown', e => { if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return; if (e.key === 'Escape') { if (document.body.classList.contains('immersive')) setImmersive(false); else { setFocus(null); selectView('all'); } } else if (e.key === 'h' || e.key === 'H') setImmersive(!document.body.classList.contains('immersive')); else if (e.key === 'm' || e.key === 'M') setMusic(!music.on, true); });
 }
 const _pv = new V3();
 function updateLabels() {
@@ -216,18 +216,31 @@ function lapAt(u) {
   const ox = _la.x + 280, oz = _la.z + 80, ol = Math.hypot(ox, oz) || 1; walk.l.set(_la.x + ox / ol * 42, 6, _la.z + oz / ol * 42);
   CAM.free = { p: walk.p, l: walk.l }; CAM.fly = null; ST.season = TG.season = u * 4;
 }
-function startLap() { cycle(false); if (walk.on) stopWalk(); setFocus(null); lap.on = true; $('#a-lap').setAttribute('aria-pressed', true); $('#a-lap').textContent = '结束环湖'; markSel(null); $('#card').hidden = true; }
+function startLap() { if (music.pref !== false) setMusic(true); cycle(false); if (walk.on) stopWalk(); setFocus(null); lap.on = true; $('#a-lap').setAttribute('aria-pressed', true); $('#a-lap').textContent = '结束环湖'; markSel(null); $('#card').hidden = true; }
 function stopLap() { if (!lap.on) return; lap.on = false; $('#a-lap').setAttribute('aria-pressed', false); $('#a-lap').textContent = '环湖一周'; $('#cap').style.opacity = 0; lap.cap = '';
   if (CAM.free) { const o = poseToOrbit(walk.p.toArray(), walk.l.toArray()); CAM.free = null; Object.assign(CAM.d, { th: o.th, ph: o.ph, r: o.r }); CAM.d.t.copy(o.t); CAM.t.copy(o.t); CAM.th = o.th; CAM.ph = o.ph; CAM.r = o.r; }
   const k = ((Math.round(ST.season) % 4) + 4) % 4; ST.season = ((ST.season % 4) + 4) % 4; TG.season = ST.season; setSeason(k); }
 // 沉浸模式：隐藏全部界面，只留画面；移动鼠标或轻点时角上浮出“显示界面”
 let immT = 0;
-function setImmersive(on) { document.body.classList.toggle('immersive', on); $('#a-imm').setAttribute('aria-pressed', on); if (on) pokeImm(); }
+function setImmersive(on) { document.body.classList.toggle('immersive', on); $('#a-imm').setAttribute('aria-pressed', on); if (on) { pokeImm(); if (music.pref !== false) setMusic(true); } }
 function pokeImm() { const e = $('#imm-exit'); e.classList.add('show'); clearTimeout(immT); immT = setTimeout(() => e.classList.remove('show'), 2600); }
 const cyc = { on: false, t: 0 };
 function cycle(on) { cyc.on = on; cyc.t = 0; $('#a-cycle').setAttribute('aria-pressed', on); }
 
 let AC = null;
+// 配乐：原创《湖上四时》长版（video/bgm.py 合成）。一遍约 104 秒，前后两遍交叠 4.5 秒循环；手动关过就不再自动响起
+const music = { on: false, pref: null, buf: null, gain: null, timer: 0, srcs: [], loading: 0 };
+function setMusic(on, byUser) {
+  if (!BGM_B64 || WL.film) return; if (byUser) music.pref = on; if (on === music.on) return; music.on = on; const bt = $('#a-music'); bt.setAttribute('aria-pressed', on); bt.textContent = on ? '配乐 · 开' : '配乐';
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume();
+    if (!music.gain) { music.gain = AC.createGain(); music.gain.gain.value = 0; music.gain.connect(AC.destination); }
+    const g = music.gain.gain, t = AC.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(on ? .85 : 0, t + (on ? 1.2 : .8));
+    if (on) { if (music.buf) musicLoop(); else if (!music.loading) { music.loading = 1; const bin = atob(BGM_B64), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); AC.decodeAudioData(u8.buffer, b => { music.buf = b; if (music.on) musicLoop(); }, () => { music.loading = 0; }); } }
+    else { clearTimeout(music.timer); const ss = music.srcs; music.srcs = []; setTimeout(() => ss.forEach(s => { try { s.stop(); } catch (e) { } }), 900); }
+  } catch (e) { }
+}
+function musicLoop(at) { const b = music.buf, t = Math.max(at || 0, AC.currentTime + .05), s = AC.createBufferSource(); s.buffer = b; s.connect(music.gain); s.start(t); music.srcs.push(s); s.onended = () => { music.srcs = music.srcs.filter(x => x !== s); };
+  const next = t + b.duration - 4.5; clearTimeout(music.timer); music.timer = setTimeout(() => { if (music.on) musicLoop(next); }, Math.max(0, (next - AC.currentTime - 1.5) * 1000)); }
 function bell() {
   try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); const t = AC.currentTime + .02, out = AC.createGain(), lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800; out.gain.value = .5; out.connect(lp); lp.connect(AC.destination);
     [[1, 1, 10], [2.0, .5, 8], [2.76, .34, 6], [3.3, .2, 4.5], [4.14, .12, 3], [5.43, .07, 2]].forEach(([m, a, d]) => { [0, .7].forEach(det => { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.value = 98 * m + det; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a * .5, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(out); o.start(t); o.stop(t + d + .1); }); });
@@ -287,7 +300,7 @@ function init() {
   frame(.016); $('#veil').classList.add('off'); WL.ready = true; requestAnimationFrame(loop);
 }
 requestAnimationFrame(() => setTimeout(() => { try { init(); } catch (e) { console.error(e); $('#veil').textContent = '场景加载失败：' + e.message; } }, 30));
-WL.api = { lapAt, startLap, setImmersive, selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
+WL.api = { lapAt, startLap, setImmersive, setMusic, music, selectView, selectPart, selectCraft, setSeason, setTod, setRain, walkAt, flyTo, togglePart, setFocus, filmPose, CAM, ST, TG, ENV };
 WL.sync = () => { const gl = renderer.getContext(), px = new Uint8Array(4); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); return px[0]; };
 WL.info = () => ({ tris: renderer.info.render.triangles, calls: renderer.info.render.calls, meshes: MESHES.length, mats: MATS.length });
 WL.r = renderer; WL.water = water;

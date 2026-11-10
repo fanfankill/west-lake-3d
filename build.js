@@ -1,7 +1,8 @@
 // 把 src/ 拼成单文件 dist/index.html（发布用片段）与 dist/west-lake.html（可直接双击打开的完整页面）
 const fs = require('fs'), path = require('path');
 const S = f => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
-const js = fs.readdirSync(path.join(__dirname, 'src')).filter(f => f.endsWith('.js')).sort().map(S).join('\n');
+const bgmFile = path.join(__dirname, 'assets', 'bgm.mp3'), bgm = fs.existsSync(bgmFile) ? fs.readFileSync(bgmFile).toString('base64') : '';   // 背景音乐内嵌进页面，保持单文件
+const js = 'const BGM_B64 = "' + bgm + '";\n' + fs.readdirSync(path.join(__dirname, 'src')).filter(f => f.endsWith('.js')).sort().map(S).join('\n');
 const frag = S('head.html') + S('body.html') +
   '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>\n' +
   '<script>\n(() => {\n"use strict";\n' + js + '\n})();\n</script>\n';

@@ -15,6 +15,7 @@
   - `head.html` `body.html` 样式与界面结构
 - `build.js` 生成 `dist/index.html`（发布用片段）和 `dist/west-lake.html`（可直接打开）
 - `video/record.js` 逐帧录制漫步镜头；`video/music.py` 合成配乐
+- `video/bgm.py` 合成网页用的长版配乐（约 104 秒），转成 `assets/bgm.mp3` 后由 `build.js` 以 base64 内嵌进页面
 - `tools-page.js` `shot.js` `uitest.js` `lap-uitest.js` 本地截图与界面检查
 
 ## 使用
@@ -41,6 +42,7 @@ python3 video/music.py video/out/music.wav     # 原创配乐《湖上四时》
 - 点湖面起涟漪，锦鲤循迹而来；入夜点湖面放荷灯
 - “环湖一周”约三分钟：镜头贴着水面绕湖一圈，沿途依次经过雷峰塔、小瀛洲、苏堤、孤山、白堤断桥，四季随路程流转，底部浮出景名
 - “沉浸模式”隐藏全部界面，只留画面；按 H 或 Esc、或点角上浮出的“显示界面”恢复
+- “配乐”开关背景音乐（按 M 亦可）；开始环湖或进入沉浸模式时自动响起，手动关过就不再自动播放
 - “湖畔漫步”沿曲桥入亭、从午后走到入夜；“四季流转”会缓慢环绕并逐季切换
 
 ## 画面做法

@@ -294,12 +294,12 @@ function buildFar() {
   ridge('hill3', 2500, -70, 75, 70, 300, 47, [], 0, { step: .9, bump: 8, rows: 16 });
   // 苏堤：长堤卧波，六桥（自北而南：跨虹、东浦、压堤、望山、锁澜、映波），桃柳相间
   const bridges = SU_BRIDGES, pts = []; for (let z = -790; z <= 650; z += 20) pts.push([suX(z), z]);
-  let run = []; const BL = 27, flushRun = () => { if (run.length > 1) causeway('far-su', run, 30); run = []; };
+  let run = []; const BL = 27, flushRun = () => { if (run.length > 1) causeway('far-su', run, 30, 15); run = []; };
   for (let z = -790; z <= 650; z += 10) { const b = bridges.find(q => Math.abs(q - z) < BL - 1.5); if (b != null) { if (run.length) { run.push([suX(b - BL + 1.5), b - BL + 1.5]); flushRun(); } continue; }
     if (!run.length) { const pb = bridges.find(q => z - q > 0 && z - q < BL + 10); if (pb != null) run.push([suX(pb + BL - 1.5), pb + BL - 1.5]); } run.push([suX(z), z]); } flushRun();
   bridges.forEach(zb => archSpan('far-su', suX(zb), zb, PI / 2 - Math.atan2(suX(zb + 5) - suX(zb - 5), 10) * 0 , 27, 13, 7.4, -1.2, 6.2));
-  for (let z = -780; z <= 640; z += 9.5) { if (bridges.some(q => Math.abs(q - z) < 30)) continue; [-11.5, 11.5].forEach((o, j) => { const pk = (Math.round(z / 9.5) + j) % 3 === 0; if (pk) tree('peach', suX(z) + o + rr(-1, 1), z + rr(-2, 2), 'far-su', 1.15); else willowLite('far-su', suX(z) + o + rr(-1, 1), z + rr(-2, 2), 1.05); }); }
-  for (let z = -776, c = 0; z <= 636; z += 13, c++) { if (bridges.some(q => Math.abs(q - z) < 32)) continue; treeFar('far-su', ['camphor', 'plane', 'camphor', 'ginkgo'][c % 4], suX(z) + (c % 2 ? 6.5 : -6.5) + rr(-.8, .8), Y0, z + rr(-2, 2), rr(.82, 1.05)); }
+  for (let z = -780; z <= 640; z += 9.5) { if (bridges.some(q => Math.abs(q - z) < 39)) continue; [-11.5, 11.5].forEach((o, j) => { const pk = (Math.round(z / 9.5) + j) % 3 === 0; if (pk) tree('peach', suX(z) + o + rr(-1, 1), z + rr(-2, 2), 'far-su', 1.15); else willowLite('far-su', suX(z) + o + rr(-1, 1), z + rr(-2, 2), 1.05); }); }
+  for (let z = -776, c = 0; z <= 636; z += 13, c++) { if (bridges.some(q => Math.abs(q - z) < 36)) continue; treeFar('far-su', ['camphor', 'plane', 'camphor', 'ginkgo'][c % 4], suX(z) + (c % 2 ? 6.5 : -6.5) + rr(-.8, .8), Y0, z + rr(-2, 2), rr(.82, 1.05)); }
   for (let z = -770; z <= 630; z += 36) { if (bridges.some(q => Math.abs(q - z) < 26)) continue; lampPost('far-su', suX(z) + 4.2, Y0, z); }
   // 雷峰塔（夕照山上，八面五层）
   const lx = -330, lz = 560, lh = 46;

@@ -11,8 +11,11 @@ function isle(part, pts, holes = []) {
 }
 function quadUp(part, mat, a, b, c, d, tint) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([].concat(a, b, c, b, d, c, a, c, b, b, c, d), 3)); g.computeVertexNormals(); B.add(part, mat, g, null, tint); }
 // 堤：草面、中间石板路、两侧条石驳岸
-function causeway(part, pts, w) {
-  const L = offsetPoly(pts, w / 2), R = offsetPoly(pts, -w / 2), l2 = offsetPoly(pts, w * .16), r2 = offsetPoly(pts, -w * .16);
+function causeway(part, pts, w, taper = 0) {
+  // taper：两端各两个点向桥身收窄（堤比桥宽，直接截断会在桥边露出一块方角）
+  const n = pts.length, wf = i => { const e = Math.min(i, n - 1 - i); return taper && e === 0 ? taper : taper && e === 1 ? (taper + w) / 2 : w; }, pw = Math.min(w * .16, (taper || w) / 2 - 1.2);
+  const off = k => pts.map((p, i) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, d = k === 0 ? wf(i) / 2 : k === 1 ? -wf(i) / 2 : k === 2 ? pw : -pw; return [p[0] - (b[1] - a[1]) / l * d, p[1] + (b[0] - a[0]) / l * d]; });
+  const L = off(0), R = off(1), l2 = off(2), r2 = off(3);
   for (let i = 0; i < pts.length - 1; i++) { quadUp(part, 'lawn', [L[i][0], Y0, L[i][1]], [R[i][0], Y0, R[i][1]], [L[i + 1][0], Y0, L[i + 1][1]], [R[i + 1][0], Y0, R[i + 1][1]], 1);
     quadUp(part, 'slab', [l2[i][0], Y0 + .03, l2[i][1]], [r2[i][0], Y0 + .03, r2[i][1]], [l2[i + 1][0], Y0 + .03, l2[i + 1][1]], [r2[i + 1][0], Y0 + .03, r2[i + 1][1]], rr(1.04, 1.12)); }
   stoneEdge(part, L, false); stoneEdge(part, R, false);
@@ -24,6 +27,10 @@ function archSpan(part, cx, cz, ang, L, W, R, yc, rise) {
   const dx = Math.cos(ang), dz = Math.sin(ang), px = -dz, pz = dx;
   B.add(part, 'stone', new THREE.ExtrudeGeometry(sh, { depth: W, bevelEnabled: false, curveSegments: 24 }), TM(cx - px * W / 2, 0, cz - pz * W / 2, -ang), .92);
   const P = (s, o, y) => [cx + dx * s + px * o, y, cz + dz * s + pz * o];
+  // 券洞内壁：沿拱券补一层双面的石面，从任何角度望进桥洞都是实心的拱，不会透出对面的券脸石
+  { const pos = [], NA = 30, rg = [[-R + .02, -2.2]]; for (let i = 0; i <= NA; i++) { const a = PI - PI * i / NA; rg.push([Math.cos(a) * (R - .02), yc + Math.sin(a) * (R - .02)]); } rg.push([R - .02, -2.2]);
+    for (let i = 0; i < rg.length - 1; i++) { const a = P(rg[i][0], -W / 2, rg[i][1]), b = P(rg[i][0], W / 2, rg[i][1]), c = P(rg[i + 1][0], -W / 2, rg[i + 1][1]), d = P(rg[i + 1][0], W / 2, rg[i + 1][1]); pos.push(...a, ...b, ...c, ...b, ...d, ...c, ...a, ...c, ...b, ...b, ...c, ...d); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); B.add(part, 'stone', g, null, .74); }
   for (let i = 0; i < 22; i++) { const s0 = -L + 2 * L * i / 22, s1 = s0 + 2 * L / 22; B.seg(part, 'slab', P(s0, 0, top(s0) + .04), P(s1, 0, top(s1) + .04), W - .9, .1);
     [-1, 1].forEach(sd => B.seg(part, 'stone', P(s0, sd * (W / 2 - .14), top(s0) + .02), P(s1, sd * (W / 2 - .14), top(s1) + .02), .5, .16, rr(.92, 1.02))); }
   [-1, 1].forEach(sd => { const ln = []; for (let i = 0; i <= 8; i++) { const q = P(-L + .4 + (2 * L - .8) * i / 8, sd * (W / 2 - .3), 0); ln.push([q[0], q[2]]); } stoneRail(part, ln, p => top((p[0] - cx) * dx + (p[1] - cz) * dz) + .08, 2.4); });
